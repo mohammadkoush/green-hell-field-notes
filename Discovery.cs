@@ -140,7 +140,8 @@ namespace FieldNotes
         /// walks every object in the scene and is far too expensive to do 60 times a second, while
         /// once every few seconds is indistinguishable to a player on foot.
         /// </summary>
-        internal static int ScanSpawners(PoiStore store, Vector3 me, float radius, out int newFound)
+        internal static int ScanSpawners(PoiStore store, Vector3 me, float radius, float merge,
+                                         out int newFound)
         {
             newFound = 0;
             int seen = 0;
@@ -152,7 +153,7 @@ namespace FieldNotes
                 if (a[i] == null) continue;
                 seen++;
                 if ((a[i].transform.position - me).sqrMagnitude > r2) continue;
-                if (Consider(store, a[i].m_ID, a[i].transform.position)) newFound++;
+                if (Consider(store, a[i].m_ID, a[i].transform.position, merge)) newFound++;
             }
 
             AIs.AISpawnerLocal[] b = UnityEngine.Object.FindObjectsOfType<AIs.AISpawnerLocal>();
@@ -161,20 +162,20 @@ namespace FieldNotes
                 if (b[i] == null) continue;
                 seen++;
                 if ((b[i].transform.position - me).sqrMagnitude > r2) continue;
-                if (Consider(store, b[i].m_ID, b[i].transform.position)) newFound++;
+                if (Consider(store, b[i].m_ID, b[i].transform.position, merge)) newFound++;
             }
 
             return seen;
         }
 
-        private static bool Consider(PoiStore store, AIs.AI.AIID id, Vector3 pos)
+        private static bool Consider(PoiStore store, AIs.AI.AIID id, Vector3 pos, float merge)
         {
             PoiKind kind; string label;
             if (!Classify(id, out kind, out label)) return false;
 
             Poi p = new Poi();
             p.Kind = kind; p.Label = label; p.Pos = pos;
-            return store.Discover(p);
+            return store.Discover(p, merge);
         }
 
         /// <summary>
@@ -186,7 +187,7 @@ namespace FieldNotes
         /// there when you left, right or wrong.
         /// </summary>
         internal static void ScanItems(PoiStore store, Vector3 me, float discoverRadius,
-                                       float seeRadius, float gameHours,
+                                       float seeRadius, float gameHours, float merge,
                                        out int newFound, out int restocked, out int emptied)
         {
             BuildTables();
@@ -226,7 +227,7 @@ namespace FieldNotes
                 Poi p = new Poi();
                 p.Kind = kind; p.Label = label; p.Pos = pos;
                 p.InStock = true; p.StockSeenAt = gameHours;
-                if (store.Discover(p)) newFound++;
+                if (store.Discover(p, merge)) newFound++;
             }
 
             // Now correct the stock of everything already known and currently in view.
@@ -235,11 +236,19 @@ namespace FieldNotes
                 if (p.Kind != PoiKind.Resource && p.Kind != PoiKind.Camp) continue;
                 if ((p.Pos - me).sqrMagnitude > sr2) continue;   // cannot see it, do not touch it
 
+                // "Anything of this kind still within the merge radius, on the ground plane." One POI
+                // now stands for a whole tree, so a single coconut left on it means the tree is not
+                // empty - and height must be ignored or a POI recorded at head height would call a
+                // tree bare while its crown is still full.
                 bool present = false;
+                float m2 = merge * merge;
                 List<Vector3> list;
                 if (live.TryGetValue(p.Label, out list))
                     for (int i = 0; i < list.Count; i++)
-                        if ((list[i] - p.Pos).sqrMagnitude < 9f) { present = true; break; }   // 3m
+                    {
+                        float dx = list[i].x - p.Pos.x, dz = list[i].z - p.Pos.z;
+                        if (dx * dx + dz * dz <= m2) { present = true; break; }
+                    }
 
                 if (present != p.InStock)
                 {

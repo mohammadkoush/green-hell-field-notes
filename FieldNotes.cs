@@ -58,7 +58,7 @@ namespace FieldNotes
         private ConfigEntry<bool>  _showPredator, _showSavage, _showSnake, _showCritter,
                                    _showResource, _showCamp, _showManual;
 
-        private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery;
+        private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
         private ConfigEntry<bool>  _mapMarksOn;
         private ConfigEntry<bool>  _flipU, _flipV, _swapUV;
         private ConfigEntry<float> _markerScale;
@@ -144,6 +144,15 @@ namespace FieldNotes
                     "known spot still has anything on it. Outside this it keeps telling you what " +
                     "was true last time - deliberately.",
                     new AcceptableValueRange<float>(5f, 300f)));
+            // One tree, one icon. coconuts_on_tree_01 is an item PER COCONUT, so the first live run
+            // wrote down 28 "Coconut" places and five of them were the same palm - stacked from
+            // y105 to y117 up one trunk. That is exactly the clutter that got wood excluded, so
+            // anything of the same kind within this distance on the ground counts as one place.
+            _mergeRadius = Config.Bind("Discovery", "MergeRadius", 7f,
+                new ConfigDescription("Things of the same kind closer together than this are one " +
+                    "place. Measured on the ground only - height is what varies up a tree.",
+                    new AcceptableValueRange<float>(0f, 40f)));
+
             _scanEvery = Config.Bind("Discovery", "ScanEverySeconds", 2f,
                 new ConfigDescription("A full scene sweep is far too costly per frame and " +
                     "indistinguishable from continuous at walking pace.",
@@ -239,8 +248,15 @@ namespace FieldNotes
                     _boundSave = save;
                     _store.Bind(PluginDir(), save);
                     _store.Load();
+
+                    // Fold away anything an older notebook recorded before the merge rule existed,
+                    // so it cleans itself up instead of needing a wipe.
+                    int folded = _store.Compact(_mergeRadius.Value);
+                    if (folded > 0) _store.Save();
+
                     _markers.Clear();
-                    Logger.LogInfo("notebook: " + _store.Count + " entries from " + _store.Path_);
+                    Logger.LogInfo("notebook: " + _store.Count + " entries from " + _store.Path_ +
+                                   (folded > 0 ? "  (" + folded + " duplicate(s) merged)" : ""));
                 }
 
                 if (Time.time >= _nextScanAt)
@@ -312,8 +328,9 @@ namespace FieldNotes
         {
             int newSpawners, spawnersSeen, newItems, restocked, emptied;
 
-            spawnersSeen = Discovery.ScanSpawners(_store, me, _discoverRadius.Value, out newSpawners);
-            Discovery.ScanItems(_store, me, _discoverRadius.Value, _seeRadius.Value, GameHours(),
+            float merge = _mergeRadius.Value;
+            spawnersSeen = Discovery.ScanSpawners(_store, me, _discoverRadius.Value, merge, out newSpawners);
+            Discovery.ScanItems(_store, me, _discoverRadius.Value, _seeRadius.Value, GameHours(), merge,
                                 out newItems, out restocked, out emptied);
 
             if (newSpawners > 0 || newItems > 0)
@@ -342,6 +359,7 @@ namespace FieldNotes
             pin.Label = "Pin";
             pin.Pos = p.transform.position;
 
+            // No merging on his own pins: if he deliberately drops two close together, he meant to.
             if (_store.Discover(pin)) { Say("pinned. " + _store.CountOf(PoiKind.Manual) + " of your own."); _store.Save(); }
             else Say("already pinned here.");
             _nextMarkerRefreshAt = 0f;

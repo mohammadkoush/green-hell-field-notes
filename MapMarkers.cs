@@ -74,19 +74,78 @@ namespace FieldNotes
             return first;
         }
 
-        /// <summary>The biggest enabled renderer under the page - in practice the sheet itself.</summary>
-        private static Renderer FindSheet(GameObject page)
+        // THE PAGE HAS NO RENDERER. The first live run reported
+        //     page 'Map00 (0/9, 37 elements)' has no renderer
+        // and that is not a fault, it is what the page IS. MapTab.InitMapsData builds each page from
+        // a child object and then walks ITS children, calling SetActive(false) on every one and
+        // filing them in MapPageData.m_Elemets. So a page is not a sheet of paper with a picture on
+        // it - it is a CONTAINER OF 37 MARKERS that the game reveals one at a time as you discover
+        // the landmarks. The printed map itself lives elsewhere in the notepad model.
+        //
+        // Which is better news than a renderer would have been. Those 37 elements are already laid
+        // out across the sheet in the page's own local space, so they ARE the calibration: the
+        // bounding box of their local positions is the drawable area, measured from the game's own
+        // data rather than assumed from a mesh. Self-calibrating, and it cannot drift if the art
+        // changes.
+
+        private struct LocalFrame
         {
-            Renderer best = null; float bestArea = 0f;
-            Renderer[] rs = page.GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < rs.Length; i++)
+            public bool Valid;
+            public Vector3 Min, Max;      // in page-local space
+            public int AxU, AxV, AxThin;  // 0=x 1=y 2=z
+            public int Samples;
+        }
+
+        /// <summary>
+        /// The page's drawable area, derived from where its own elements sit. Needs at least a few
+        /// elements; below that there is nothing to measure and we say so rather than guess.
+        /// </summary>
+        private static LocalFrame MeasurePage(GameObject page)
+        {
+            LocalFrame f = new LocalFrame();
+            f.Valid = false;
+
+            Vector3 min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+            Vector3 max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+            int n = 0;
+
+            Transform t = page.transform;
+            for (int i = 0; i < t.childCount; i++)
             {
-                if (rs[i] == null) continue;
-                Vector3 s = rs[i].bounds.size;
-                float area = Mathf.Max(s.x * s.y, Mathf.Max(s.x * s.z, s.y * s.z));
-                if (area > bestArea) { bestArea = area; best = rs[i]; }
+                Transform c = t.GetChild(i);
+                if (c == null) continue;
+                if (c.name.StartsWith("FieldNote")) continue;   // never measure ourselves
+                Vector3 p = c.localPosition;
+                min = Vector3.Min(min, p);
+                max = Vector3.Max(max, p);
+                n++;
             }
-            return best;
+            if (n < 4) return f;
+
+            Vector3 span = max - min;
+
+            // The two axes that actually vary are the sheet; the one that barely moves is its
+            // thickness.
+            int thin = 0;
+            if (span.y <= span.x && span.y <= span.z) thin = 1;
+            else if (span.z <= span.x && span.z <= span.y) thin = 2;
+
+            f.AxThin = thin;
+            f.AxU = (thin == 0 ? 2 : 0);
+            f.AxV = (thin == 1 ? 2 : 1);
+            f.Min = min; f.Max = max; f.Samples = n; f.Valid = true;
+            return f;
+        }
+
+        private static float Get(Vector3 v, int axis)
+        {
+            return axis == 0 ? v.x : (axis == 1 ? v.y : v.z);
+        }
+
+        private static Vector3 Set(Vector3 v, int axis, float value)
+        {
+            if (axis == 0) v.x = value; else if (axis == 1) v.y = value; else v.z = value;
+            return v;
         }
 
         /// <summary>0..1 across the map sheet, or false if the reference dummies are missing.</summary>
@@ -137,24 +196,16 @@ namespace FieldNotes
             _pageUsed = page;
             _builtForCount = store.Count;
 
-            Renderer sheet = FindSheet(page);
-            if (sheet == null) { LastNote = "page '" + label + "' has no renderer"; return; }
+            LocalFrame f = MeasurePage(page);
+            if (!f.Valid)
+            {
+                LastNote = "page '" + label + "' has too few elements to measure";
+                return;
+            }
 
-            Bounds b = sheet.bounds;
-            Vector3 size = b.size;
-
-            // The sheet is flat, so its thinnest axis is the normal. Work that out rather than
-            // assuming "up" - the map is held in a hand and its orientation follows the animation.
-            Vector3 normal, axU, axV;
-            float extU, extV;
-            if (size.y <= size.x && size.y <= size.z)
-            { normal = sheet.transform.up;      axU = sheet.transform.right; axV = sheet.transform.forward; extU = size.x; extV = size.z; }
-            else if (size.z <= size.x && size.z <= size.y)
-            { normal = sheet.transform.forward; axU = sheet.transform.right; axV = sheet.transform.up;      extU = size.x; extV = size.y; }
-            else
-            { normal = sheet.transform.right;   axU = sheet.transform.forward; axV = sheet.transform.up;    extU = size.z; extV = size.y; }
-
-            float lift = Mathf.Max(0.0008f, Mathf.Min(size.x, Mathf.Min(size.y, size.z)) * 0.55f);
+            float extU = Get(f.Max, f.AxU) - Get(f.Min, f.AxU);
+            float extV = Get(f.Max, f.AxV) - Get(f.Min, f.AxV);
+            float midThin = (Get(f.Max, f.AxThin) + Get(f.Min, f.AxThin)) * 0.5f;
             float dot = Mathf.Max(extU, extV) * markerScale;
 
             int placed = 0, offSheet = 0;
@@ -170,31 +221,39 @@ namespace FieldNotes
                 if (flipU) u = 1f - u;
                 if (flipV) v = 1f - v;
 
-                // Outside the sheet is normal - the notebook covers the whole island and one page
-                // does not. Counted rather than clamped, because clamping would pile markers up on
-                // the edges and read as a bug.
+                // Outside the sheet is normal - the notebook covers the whole island and one page of
+                // nine does not. Counted rather than clamped: clamping would pile every distant
+                // marker onto the edges and read as a bug.
                 if (u < 0f || u > 1f || v < 0f || v > 1f) { offSheet++; continue; }
 
-                Vector3 pos = b.center
-                            + axU * ((u - 0.5f) * extU)
-                            + axV * ((v - 0.5f) * extV)
-                            + normal * lift;
+                Vector3 local = Vector3.zero;
+                local = Set(local, f.AxU, Mathf.Lerp(Get(f.Min, f.AxU), Get(f.Max, f.AxU), u));
+                local = Set(local, f.AxV, Mathf.Lerp(Get(f.Min, f.AxV), Get(f.Max, f.AxV), v));
+                local = Set(local, f.AxThin, midThin);
 
                 Color c = Minimap.ColorOf(p.Kind);
                 if ((p.Kind == PoiKind.Resource || p.Kind == PoiKind.Camp) && !p.InStock) c.a = 0.35f;
 
-                GameObject q = MakeQuad(pos, normal, dot, c, page);
+                GameObject q = MakeMarker(local, f, dot, c, page);
                 if (q != null) { _spawned.Add(q); placed++; }
             }
 
-            LastNote = "page " + label + ": " + placed + " marker(s), " + offSheet + " off-sheet";
+            LastNote = "page " + label + ": " + placed + " on, " + offSheet + " off-sheet (" +
+                       f.Samples + " elements measured, axes " + f.AxU + "/" + f.AxV + ")";
         }
 
-        private GameObject MakeQuad(Vector3 pos, Vector3 normal, float size, Color color, GameObject parent)
+        /// <summary>
+        /// A flattened CUBE, not a quad. A quad is single-sided, and which way the page's thin axis
+        /// points is not knowable from the data - so half the time a correct marker would be an
+        /// invisible one, and we would be debugging maths that was already right. A squashed cube is
+        /// visible from either side and removes the question.
+        /// </summary>
+        private GameObject MakeMarker(Vector3 localPos, LocalFrame f, float size, Color color,
+                                      GameObject parent)
         {
             try
             {
-                GameObject q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                GameObject q = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 q.name = "FieldNote";
 
                 // A collider on something held in front of the player's face is asking for trouble.
@@ -206,10 +265,13 @@ namespace FieldNotes
                 // invisible.
                 q.layer = parent.layer;
 
-                q.transform.position = pos;
-                q.transform.rotation = Quaternion.LookRotation(-normal, Vector3.up);
-                q.transform.localScale = new Vector3(size, size, size);
-                q.transform.SetParent(parent.transform, true);
+                q.transform.SetParent(parent.transform, false);
+                q.transform.localPosition = localPos;
+                q.transform.localRotation = Quaternion.identity;
+
+                Vector3 scale = new Vector3(size, size, size);
+                scale = Set(scale, f.AxThin, size * 0.06f);   // thin in the page's own thin axis
+                q.transform.localScale = scale;
 
                 Renderer r = q.GetComponent<Renderer>();
                 if (r != null)
@@ -245,6 +307,31 @@ namespace FieldNotes
             if (page != null)
             {
                 sb.AppendLine("root layer " + page.layer + " (" + LayerMask.LayerToName(page.layer) + ")");
+
+                // The measured drawable area, and the element positions it came from. If markers land
+                // in the wrong place, this is the first thing to read: the frame says which local
+                // axes the sheet runs along, and the samples say whether they are plausible.
+                LocalFrame f = MeasurePage(page);
+                sb.AppendLine();
+                sb.AppendLine("## measured frame: " + (f.Valid ? "OK" : "TOO FEW ELEMENTS"));
+                if (f.Valid)
+                {
+                    sb.AppendLine("  local min " + f.Min.ToString("0.0000") + "  max " + f.Max.ToString("0.0000"));
+                    sb.AppendLine("  U axis " + f.AxU + "   V axis " + f.AxV + "   thin axis " + f.AxThin);
+                    sb.AppendLine("  from " + f.Samples + " elements");
+                }
+                sb.AppendLine();
+                sb.AppendLine("## first elements, local positions");
+                int shown = 0;
+                for (int i = 0; i < page.transform.childCount && shown < 12; i++)
+                {
+                    Transform c = page.transform.GetChild(i);
+                    if (c == null || c.name.StartsWith("FieldNote")) continue;
+                    sb.AppendLine("  " + c.name + "  " + c.localPosition.ToString("0.0000") +
+                                  (c.gameObject.activeSelf ? "  [shown]" : "  [hidden]"));
+                    shown++;
+                }
+                sb.AppendLine();
                 Walk(page.transform, 0, sb);
             }
 

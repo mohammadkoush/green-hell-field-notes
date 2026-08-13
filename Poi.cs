@@ -92,14 +92,56 @@ namespace FieldNotes
 
         public string Path_ { get { return _path; } }
 
-        /// <summary>Returns true if this was the first time he has seen it.</summary>
-        public bool Discover(Poi p)
+        /// <summary>
+        /// Returns true if this was the first time he has seen it.
+        ///
+        /// <paramref name="mergeRadius"/> is horizontal and it matters more than it looks. The first
+        /// live run came back with 28 "Coconut" entries, and five of them were the same palm tree:
+        /// coconuts_on_tree_01 is an item PER COCONUT, so one tree at x471,z1392 produced five POIs
+        /// stacked from y105 to y117. Which is precisely the clutter that got wood excluded - a map
+        /// where one tree is five icons marks nothing. Merging on the horizontal only is deliberate:
+        /// height is what varies within a tree, and distance on the ground is what he walks.
+        /// </summary>
+        public bool Discover(Poi p, float mergeRadius)
         {
             string k = p.Key();
             if (_byKey.ContainsKey(k)) return false;
+
+            if (mergeRadius > 0f)
+            {
+                float r2 = mergeRadius * mergeRadius;
+                foreach (Poi e in _byKey.Values)
+                {
+                    if (e.Kind != p.Kind || e.Label != p.Label) continue;
+                    float dx = e.Pos.x - p.Pos.x, dz = e.Pos.z - p.Pos.z;
+                    if (dx * dx + dz * dz <= r2) return false;   // same tree, same nest, same den
+                }
+            }
+
             _byKey.Add(k, p);
             _dirty = true;
             return true;
+        }
+
+        public bool Discover(Poi p) { return Discover(p, 0f); }
+
+        /// <summary>
+        /// Collapse anything already written down that the merge rule would now reject. Run once on
+        /// load so a notebook made before the rule existed cleans itself up instead of needing a
+        /// wipe. Returns how many entries were folded away.
+        /// </summary>
+        public int Compact(float mergeRadius)
+        {
+            if (mergeRadius <= 0f || _byKey.Count == 0) return 0;
+
+            List<Poi> ordered = new List<Poi>(_byKey.Values);
+            _byKey.Clear();
+            int dropped = 0;
+            for (int i = 0; i < ordered.Count; i++)
+                if (!Discover(ordered[i], mergeRadius)) dropped++;
+
+            if (dropped > 0) _dirty = true;
+            return dropped;
         }
 
         public Poi Find(PoiKind kind, string label, Vector3 pos)
