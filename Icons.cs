@@ -93,6 +93,8 @@ namespace FieldNotes
             // inside the name is more robust than listing every AIID.
             if (k.Length > 0)
             {
+                if (k.Contains("stingray"))  return Get("stingray");
+                if (k.Contains("piranha") || k.Contains("vampirefish")) return Get("stingray");
                 if (k.Contains("scorpion"))  return Get("scorpion");
                 if (k.Contains("spider") || k.Contains("birdeater") || k.Contains("centipede"))
                                              return Get("spider");

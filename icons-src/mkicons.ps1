@@ -181,10 +181,10 @@ $picks = @(
     @{ c = 2; r = 3; n = 'cassava.png'   },   # leaves with a root system
     @{ c = 4; r = 4; n = 'palmheart.png' },   # grass tuft
     @{ c = 4; r = 2; n = 'mushroom.png'  },   # squat cactus reads as a mushroom at 64px
-    @{ c = 3; r = 2; n = 'birdnest.png'  },   # wheat sheaves
-    @{ c = 0; r = 1; n = 'plant.png'     },   # leafy stem - the fallback for anything unmapped
-    @{ c = 0; r = 0; n = 'camp.png'      }    # sunflower, standing in until camp gear has real art
+    @{ c = 0; r = 1; n = 'plant.png'     }    # leafy stem - the fallback for anything unmapped
 )
+# birdnest and camp used to be cut from this sheet - a wheat sheaf and a sunflower. Both are drawn
+# properly further down instead; neither ever looked like what it claimed to be.
 foreach ($p in $picks) {
     $cell = Cell $p.c $p.r
     Convert-Icon -Path $plants -X $cell.X -Y $cell.Y -W $cell.W -H $cell.H -Mode keepcolor -OutName $p.n
@@ -263,6 +263,91 @@ function New-Figure {
 
 New-Figure -OutName 'savage.png' -WithSpear $true  -HeadScale 1.0 -Height 1.0
 New-Figure -OutName 'kid.png'    -WithSpear $false -HeadScale 1.3 -Height 0.72
+
+Write-Host "Drawn shapes" -ForegroundColor Cyan
+
+# Three more with no source art, drawn for the same reason as the people: a stand-in borrowed from
+# another subject reads as correct and is therefore worse than nothing. The bird nest was a WHEAT
+# SHEAF and the crafted-gear mark was a SUNFLOWER, which is how you end up with a map that quietly
+# lies about what is on it.
+function New-Shape {
+    param([string]$OutName, [string]$Shape)
+
+    $S = 256
+    $bmp = New-Object System.Drawing.Bitmap $S, $S, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+    $g.Clear([System.Drawing.Color]::FromArgb(0, 0, 0, 0))
+    $white = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
+
+    if ($Shape -eq 'stingray') {
+        # Seen from above: pointed nose, long swept wings, whip tail. A ray is one of the few animals
+        # that is completely readable as a flat silhouette, so this needs no detail at all.
+        # The first attempt domed the leading edge and came out looking like an umbrella. What makes
+        # a ray a ray is the CONCAVE trailing edge - wings swept back past the body, not a smooth
+        # skirt - so the two points either side of the tail sit higher than the wing tips.
+        $pts = New-Object 'System.Drawing.PointF[]' 8
+        $pts[0] = New-Object System.Drawing.PointF 128, 34
+        $pts[1] = New-Object System.Drawing.PointF 192, 74
+        $pts[2] = New-Object System.Drawing.PointF 250, 152
+        $pts[3] = New-Object System.Drawing.PointF 166, 138
+        $pts[4] = New-Object System.Drawing.PointF 128, 160
+        $pts[5] = New-Object System.Drawing.PointF 90,  138
+        $pts[6] = New-Object System.Drawing.PointF 6,   152
+        $pts[7] = New-Object System.Drawing.PointF 64,  74
+        $g.FillPolygon($white, $pts)
+
+        $tail = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), 11
+        $tail.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $tail.EndCap = [System.Drawing.Drawing2D.LineCap]::Triangle
+        $g.DrawLine($tail, [single]128, [single]160, [single]128, [single]244)
+        $tail.Dispose()
+    }
+    elseif ($Shape -eq 'birdnest') {
+        # A woven rim drawn as a thick ellipse outline, with eggs sitting inside it. The rim being an
+        # OUTLINE rather than a fill is what makes it read as a nest and not a bowl.
+        $rim = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), 26
+        $g.DrawEllipse($rim, 26, 116, 204, 104)
+        $rim.Dispose()
+        $g.FillEllipse($white, 86,  92, 48, 56)
+        $g.FillEllipse($white, 130, 84, 48, 56)
+        $g.FillEllipse($white, 108, 118, 48, 56)
+    }
+    else {
+        # Crafted gear: crossed tools. Not a tent - he asked for CRAFTED items to be told apart from
+        # what grows on the island, and a tent says "camp" while crossed tools say "things you made".
+        $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), 20
+        $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $g.DrawLine($pen, [single]58, [single]208, [single]186, [single]66)
+        $g.DrawLine($pen, [single]198, [single]208, [single]70, [single]66)
+        $pen.Dispose()
+
+        $head1 = New-Object 'System.Drawing.PointF[]' 3
+        $head1[0] = New-Object System.Drawing.PointF 196, 34
+        $head1[1] = New-Object System.Drawing.PointF 232, 84
+        $head1[2] = New-Object System.Drawing.PointF 162, 78
+        $g.FillPolygon($white, $head1)
+
+        $head2 = New-Object 'System.Drawing.PointF[]' 3
+        $head2[0] = New-Object System.Drawing.PointF 60,  34
+        $head2[1] = New-Object System.Drawing.PointF 94,  78
+        $head2[2] = New-Object System.Drawing.PointF 24,  84
+        $g.FillPolygon($white, $head2)
+    }
+
+    $white.Dispose(); $g.Dispose()
+
+    $tmp = Join-Path $env:TEMP ("fieldnotes-" + $OutName)
+    $bmp.Save($tmp, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    Convert-Icon -Path $tmp -X 0 -Y 0 -W 0 -H 0 -Mode chroma -Tolerance 8 -OutName $OutName
+    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+}
+
+New-Shape -OutName 'stingray.png' -Shape 'stingray'
+New-Shape -OutName 'birdnest.png' -Shape 'birdnest'
+New-Shape -OutName 'camp.png'     -Shape 'crafted'
 
 Write-Host ""
 Write-Host "Icons written to $OutDir" -ForegroundColor Yellow

@@ -63,6 +63,14 @@ namespace FieldNotes
                 case AIs.AI.AIID.AlbinoCaiman:
                     kind = PoiKind.Predator; return true;
 
+                // Water hazards. They were falling through to "scenery" and were never drawn at all -
+                // not a missing icon, a missing classification. A stingray you did not know about is
+                // the one that gets you.
+                case AIs.AI.AIID.Stingray:
+                case AIs.AI.AIID.Piranha:
+                case AIs.AI.AIID.VampireFish:
+                    kind = PoiKind.Critter; return true;
+
                 default:
                     return false;   // everything else is scenery as far as this mod is concerned
             }
