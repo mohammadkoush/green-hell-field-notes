@@ -105,8 +105,23 @@ $shapes['peccary'] = {
     }
 }
 $shapes['agouti'] = {
-    # Small, high at the hip, nose down - the shape of a thing that is always about to run.
-    param($g,$w) Draw-Quad $g $w -bodyW 104 -bodyH 58 -legLen 46 -legW 11 -headR 25 -snout 20 -rump 26
+    # Was a fluffy blob, because Draw-Quad's rump ellipse rounded the whole animal off. An agouti is
+    # not round: it is a WEDGE - high, arched haunches at the back dropping to a low nose at the
+    # front, on thin legs, with no tail to speak of. Drawn as one arched polygon so the profile is
+    # the silhouette rather than something bolted onto an oval.
+    param($g,$w)
+    Poly $g $w @(
+        (P 30 168), (P 44 118), (P 74 88), (P 116 74),
+        (P 156 82), (P 186 106), (P 206 124), (P 210 148),
+        (P 176 160), (P 120 164), (P 62 172)
+    )
+    Ellipse $g $w 196 132 56 50
+    Poly $g $w @((P 214 122), (P 250 140), (P 212 152))
+    Poly $g $w @((P 186 106), (P 196 84), (P 206 106))
+    Line $g $w 54 162 46 214 12
+    Line $g $w 86 164 82 214 12
+    Line $g $w 150 158 154 212 11
+    Line $g $w 178 154 186 210 11
 }
 $shapes['armadillo'] = {
     param($g,$w)
@@ -164,16 +179,27 @@ $shapes['toucan'] = {
     Line $g $w 96 186 92 214 12
 }
 $shapes['frog'] = {
-    # From above, splayed. A frog seen from the side is a lump.
+    # Eight thin segments radiating from a round body is a SPIDER, whatever it was meant to be. The
+    # difference is that a frog has four limbs made of MASS - thick thighs folded up beside the body
+    # - and two eyes that sit proud on top of a wide head. Legs are polygons now, not strokes, and
+    # the eyes are the loudest thing in the picture.
     param($g,$w)
-    Ellipse $g $w 128 132 110 116
-    Ellipse $g $w 128 74 84 58
-    Ellipse $g $w 102 58 30 30
-    Ellipse $g $w 154 58 30 30
-    Line $g $w 84 108 34 74 15;  Line $g $w 34 74 22 116 13
-    Line $g $w 172 108 222 74 15; Line $g $w 222 74 234 116 13
-    Line $g $w 92 172 44 210 16;  Line $g $w 44 210 74 236 14
-    Line $g $w 164 172 212 210 16; Line $g $w 212 210 182 236 14
+    # Folded hind legs: heavy thighs, the widest part of the animal.
+    Poly $g $w @((P 76 140), (P 40 172), (P 34 212), (P 66 224), (P 92 196), (P 96 156))
+    Poly $g $w @((P 180 140), (P 216 172), (P 222 212), (P 190 224), (P 164 196), (P 160 156))
+    Poly $g $w @((P 44 206), (P 20 232), (P 58 240), (P 76 224))
+    Poly $g $w @((P 212 206), (P 236 232), (P 198 240), (P 180 224))
+    # Front legs, smaller, tucked forward.
+    Poly $g $w @((P 88 108), (P 52 96), (P 40 122), (P 74 136))
+    Poly $g $w @((P 168 108), (P 204 96), (P 216 122), (P 182 136))
+    # Body and the wide head.
+    Ellipse $g $w 128 152 116 116
+    Ellipse $g $w 128 88 130 84
+    # The eyes, sitting proud on top - the single feature that says frog and not spider.
+    Ellipse $g $w 92 52 52 52
+    Ellipse $g $w 164 52 52 52
+    Punch $g @((P 82 40),(P 96 40),(P 96 54),(P 82 54))
+    Punch $g @((P 160 40),(P 174 40),(P 174 54),(P 160 54))
 }
 $shapes['lizard'] = {
     param($g,$w)
@@ -194,11 +220,35 @@ $shapes['crab'] = {
     Line $g $w 74 108 34 68 13;  Poly $g $w @((P 40 78), (P 8 46), (P 34 40), (P 52 62))
     Line $g $w 182 108 222 68 13; Poly $g $w @((P 216 78), (P 248 46), (P 222 40), (P 204 62))
 }
+$shapes['animal'] = {
+    # The honest fallback for any four-legged thing I cannot draw recognisably. It is the same rule
+    # that killed the panther-for-savages icon: a WRONG icon is worse than a vague one, because a
+    # wrong one reads as correct. An unlabelled quadruped says "an animal is here", which is true.
+    param($g,$w) Draw-Quad $g $w -bodyW 132 -bodyH 72 -legLen 50 -legW 15 -headR 30 -snout 22 -tail 26
+}
 $shapes['anteater'] = {
-    # Long tapering snout and an enormous tail. Two silhouette facts, both unmistakable.
+    # Was reading as a fox, because the snout and the tail were both merely LONGISH. An anteater is
+    # a caricature: the snout is a third of the animal and the tail is bigger than the body. Both are
+    # now exaggerated past realism, which is the only way either survives being 20 pixels wide.
     param($g,$w)
-    Draw-Quad $g $w -bodyW 124 -bodyH 66 -legLen 48 -legW 14 -headR 24 -snout 66
-    Poly $g $w @((P 66 106), (P 6 42), (P 4 118), (P 62 148))
+    # Second pass. The first one was still a fox, and the reason was the TAIL: a pointed triangle
+    # IS a fox tail, whatever size it is. An anteater's tail is a rounded bushy mass, so it is built
+    # from overlapping ellipses instead. And the snout was a stubby wedge - it is now thin, long and
+    # angled DOWN toward the ground, which is where an anteater's face always points.
+    # Third and last pass. Every failure so far came from BOLTING PARTS ON - a wedge snout stuck to
+    # an oval, a tail stuck to the other end - which reads as a fox with accessories. So the head,
+    # snout and back are now ONE outline: a single silhouette that tapers continuously from the
+    # shoulders down to the nose at the ground. Only the tail is separate, and it is a broad sweep
+    # rather than a point.
+    Poly $g $w @(
+        (P 62 104), (P 104 88), (P 140 92), (P 168 108),
+        (P 208 150), (P 240 186), (P 232 200), (P 192 172),
+        (P 160 148), (P 132 152), (P 96 156), (P 60 146)
+    )
+    # Tail: a wide banner sweeping up and back, blunt at the end.
+    Poly $g $w @((P 66 100), (P 40 44), (P 8 52), (P 6 112), (P 24 152), (P 62 150))
+    Line $g $w 92 152 86 206 16
+    Line $g $w 122 152 118 206 16
 }
 $shapes['bat'] = {
     param($g,$w)
@@ -316,14 +366,29 @@ $shapes['papaya'] = {
     Line $g $w 128 62 128 22 11
     Poly $g $w @((P 128 30), (P 190 12), (P 150 46))
 }
-$shapes['cassava'] = {
+# cassava and anteater are NOT in this set. Both were attempted four times and both kept reading as
+# something else - the cassava as an insect, then a scarecrow, then an easel; the anteater as a fox,
+# then a dinosaur. They fall back to the generic plant and the generic animal in Icons.cs until real
+# art arrives. The dead shape is kept below, unreferenced, so the next attempt starts from the last
+# one rather than from nothing.
+$shapes_retired_cassava = {
+    # Three vertical ellipses with two leaves on top read as an insect, not a root - symmetrical
+    # ovals around a central stalk is exactly what a beetle looks like. A cassava is TAPERED tubers
+    # hanging downward and fanning apart, so they are polygons now, wide at the crown and pointed at
+    # the tip, with the leaves splayed rather than sitting like antennae.
+    # Second pass. The splayed leaves turned it into a palm tree - five thin fingers above a stalk
+    # is a frond, and the tubers were too narrow to compete. So the ROOT is now the whole icon: three
+    # fat tapered tubers filling the frame, with only a small leafy tuft on top to say it grew. If
+    # one shape has to win at 20 pixels it should be the part you dig up and eat.
     param($g,$w)
-    for ($i = -1; $i -le 1; $i++) {
-        Ellipse $g $w (128 + $i*46) (176 - [Math]::Abs($i)*10) 54 128
-    }
-    Line $g $w 128 96 128 44 12
-    Poly $g $w @((P 128 52), (P 74 16), (P 122 24))
-    Poly $g $w @((P 128 52), (P 182 16), (P 134 24))
+    Poly $g $w @((P 100 84), (P 156 84), (P 148 240), (P 116 240))
+    Poly $g $w @((P 74 92), (P 112 82), (P 56 226), (P 30 210))
+    Poly $g $w @((P 144 82), (P 182 92), (P 226 210), (P 200 226))
+    Ellipse $g $w 128 84 116 46
+    # NO tuft, NO stem. Three tubers under a head-shaped crown became a scarecrow the moment anything
+    # sat on top of it - the eye reads head-body-legs before it reads anything botanical. A cassava
+    # root bundle with nothing above the crown cannot be mistaken for a figure, and the tubers are
+    # what you dig up anyway.
 }
 $shapes['palmheart'] = {
     param($g,$w)

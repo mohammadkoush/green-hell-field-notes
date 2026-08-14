@@ -84,6 +84,16 @@ $icons = Join-Path $srcDir 'icons'
 if (Test-Path $icons) {
     $iconDest = Join-Path $dest 'icons'
     New-Item -ItemType Directory -Force $iconDest | Out-Null
+
+    # MIRROR, don't just copy. A plain copy never removes anything, so an icon deleted from the
+    # source folder lived on in the deployed one forever - and since the lookup matches on filename,
+    # that stale file kept being used. Deleting a bad icon has to actually delete it.
+    Get-ChildItem $iconDest -Filter *.png -ErrorAction SilentlyContinue | ForEach-Object {
+        if (-not (Test-Path (Join-Path $icons $_.Name))) {
+            Remove-Item $_.FullName -Force
+            Write-Host "  removed stale icon $($_.Name)" -ForegroundColor DarkYellow
+        }
+    }
     Copy-Item (Join-Path $icons '*.png') $iconDest -Force
     $n = @(Get-ChildItem $iconDest -Filter *.png).Count
     Write-Host "Copied $n icon(s) -> $iconDest" -ForegroundColor Green

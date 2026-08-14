@@ -106,7 +106,14 @@ namespace FieldNotes
                 if (k.Contains("armadillo")) return Get("armadillo");
                 if (k.Contains("tortoise") || k.Contains("turtle")) return Get("turtle");
                 if (k.Contains("mouse"))     return Get("mouse");
-                if (k.Contains("anteater"))  return Get("anteater");
+                // Anteater and cassava are DELIBERATELY not their own icons. Four passes each and
+                // both kept reading as something else - the anteater as a fox, then a dinosaur; the
+                // cassava as an insect, then a scarecrow, then an easel. Rather than ship a picture
+                // that confidently says the wrong thing, they fall back to the generic animal and
+                // the generic plant, which are merely unspecific. Same rule that removed the panther
+                // from savages. Drop anteater.png or cassava.png into the icons folder and this line
+                // starts using it with no code change.
+                if (k.Contains("anteater"))  return Get("animal");
                 if (k.Contains("tamarin") || k.Contains("atelinae")) return Get("monkey");
                 if (k.Contains("iguana") || k.Contains("caimanlizard")) return Get("lizard");
                 if (k.Contains("crab"))      return Get("crab");
@@ -143,7 +150,7 @@ namespace FieldNotes
                 if (k.Contains("coconut"))   return Get("coconut");
                 if (k.Contains("banana"))    return Get("banana");
                 if (k.Contains("papaya"))    return Get("papaya");
-                if (k.Contains("cassava") || k.Contains("manioc")) return Get("cassava");
+                if (k.Contains("cassava") || k.Contains("manioc")) return Get("plant");
                 if (k.Contains("palmheart") || k.Contains("palm")) return Get("palmheart");
                 if (k.Contains("molineria")) return Get("molineria");
                 if (k.Contains("mushroom"))  return Get("mushroom");
@@ -162,7 +169,7 @@ namespace FieldNotes
                 case PoiKind.Snake:    return Get("snake");
                 case PoiKind.Critter:  return Get("spider");
                 case PoiKind.Camp:     return Get("camp");
-                case PoiKind.Food:     return Get("capybara");   // generic four-legged fallback
+                case PoiKind.Food:     return Get("animal");
 
                 // NOT the panther. It used to fall through to Get("predator") as a stand-in for
                 // missing human art, and the result was savages drawn as wildcats - which is worse
