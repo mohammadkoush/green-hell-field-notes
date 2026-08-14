@@ -183,18 +183,22 @@ namespace FieldNotes
         /// Rebuild only when something actually changed - the page swapped, or the notebook grew.
         /// Called on a timer, so it must be cheap to say "nothing to do".
         /// </summary>
-        internal void Refresh(PoiStore store, Func<PoiKind, bool> enabled,
+        internal void Refresh(PoiStore store, List<LiveThing> live, Func<PoiKind, bool> enabled,
                               bool flipU, bool flipV, bool swapUV, float markerScale)
         {
             string label;
             GameObject page = GetNotepadPage(out label);
             if (page == null) { if (_spawned.Count > 0) Clear(); return; }
 
-            if (page == _pageUsed && _builtForCount == store.Count) return;
+            // Live things move, so the map has to be rebuilt whenever their count changes as well as
+            // when the notebook grows. The refresh runs on a one second timer, which is as live as a
+            // sheet of paper in your hands needs to be.
+            int liveCount = (live != null ? live.Count : 0);
+            if (page == _pageUsed && _builtForCount == store.Count + liveCount * 1000) return;
 
             Clear();
             _pageUsed = page;
-            _builtForCount = store.Count;
+            _builtForCount = store.Count + liveCount * 1000;
 
             LocalFrame f = MeasurePage(page);
             if (!f.Valid)
@@ -234,12 +238,43 @@ namespace FieldNotes
                 Color c = Minimap.ColorOf(p.Kind);
                 if ((p.Kind == PoiKind.Resource || p.Kind == PoiKind.Camp) && !p.InStock) c.a = 0.35f;
 
-                GameObject q = MakeMarker(local, f, dot, c, page);
+                GameObject q = MakeMarker(local, f, dot, c, Icons.For(p.Kind, p.Label), page);
                 if (q != null) { _spawned.Add(q); placed++; }
             }
 
-            LastNote = "page " + label + ": " + placed + " on, " + offSheet + " off-sheet (" +
-                       f.Samples + " elements measured, axes " + f.AxU + "/" + f.AxV + ")";
+            int liveOn = 0;
+            if (live != null)
+            {
+                for (int i = 0; i < live.Count; i++)
+                {
+                    LiveThing t = live[i];
+                    if (!enabled(t.Kind)) continue;
+
+                    Vector2 uv;
+                    if (!WorldToMapUV(t.Pos, out uv)) break;
+
+                    float u = uv.x, v = uv.y;
+                    if (swapUV) { float sw = u; u = v; v = sw; }
+                    if (flipU) u = 1f - u;
+                    if (flipV) v = 1f - v;
+                    if (u < 0f || u > 1f || v < 0f || v > 1f) { offSheet++; continue; }
+
+                    Vector3 local = Vector3.zero;
+                    local = Set(local, f.AxU, Mathf.Lerp(Get(f.Min, f.AxU), Get(f.Max, f.AxU), u));
+                    local = Set(local, f.AxV, Mathf.Lerp(Get(f.Min, f.AxV), Get(f.Max, f.AxV), v));
+                    local = Set(local, f.AxThin, midThin);
+
+                    // A shade bigger than a remembered place, for the same reason as on the minimap:
+                    // something actually standing there should read first.
+                    GameObject q = MakeMarker(local, f, dot * 1.2f, Color.white,
+                                              Icons.For(t.Kind, t.Label), page);
+                    if (q != null) { _spawned.Add(q); liveOn++; }
+                }
+            }
+
+            LastNote = "page " + label + ": " + placed + " known + " + liveOn + " live, " +
+                       offSheet + " off-sheet (" + f.Samples + " elements, axes " +
+                       f.AxU + "/" + f.AxV + ")";
         }
 
         /// <summary>
@@ -249,7 +284,7 @@ namespace FieldNotes
         /// visible from either side and removes the question.
         /// </summary>
         private GameObject MakeMarker(Vector3 localPos, LocalFrame f, float size, Color color,
-                                      GameObject parent)
+                                      Texture2D icon, GameObject parent)
         {
             try
             {
@@ -278,13 +313,25 @@ namespace FieldNotes
                 {
                     if (_sharedMat == null)
                     {
+                        // Sprites/Default first: it is unlit and respects alpha, so a cut-out icon
+                        // stays a cut-out icon under whatever lighting the notepad camera has.
                         Shader sh = Shader.Find("Sprites/Default");
+                        if (sh == null) sh = Shader.Find("Unlit/Transparent");
                         if (sh == null) sh = Shader.Find("Unlit/Color");
                         if (sh == null) sh = Shader.Find("Standard");
                         if (sh != null) _sharedMat = new Material(sh);
                     }
                     if (_sharedMat != null) r.material = new Material(_sharedMat);
-                    r.material.color = color;
+
+                    if (icon != null)
+                    {
+                        r.material.mainTexture = icon;
+                        // White, so the artwork shows its own colours rather than being dyed by the
+                        // category. Alpha still carries the out-of-stock fade.
+                        r.material.color = new Color(1f, 1f, 1f, color.a);
+                    }
+                    else r.material.color = color;
+
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                     r.receiveShadows = false;
                 }

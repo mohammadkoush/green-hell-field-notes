@@ -77,6 +77,30 @@ namespace FieldNotes
             Fill(new Rect(x - size * 0.5f, y - size * 0.5f, size, size), c);
         }
 
+        /// <summary>
+        /// An icon if there is one for this thing, a coloured dot if there is not. The icon is drawn
+        /// at its own colours with alpha applied, so the silhouettes stay white and the plants stay
+        /// green - the category colour is carried by the dot fallback and by the ring, not by
+        /// tinting art that was cut to be read at a glance.
+        /// </summary>
+        private static void Mark(float x, float y, float size, PoiKind kind, string label, float alpha)
+        {
+            Texture2D icon = Icons.For(kind, label);
+            if (icon == null)
+            {
+                Color c = ColorOf(kind);
+                c.a = alpha;
+                Dot(x, y, size, c);
+                return;
+            }
+
+            Color old = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, alpha);
+            GUI.DrawTexture(new Rect(x - size * 0.5f, y - size * 0.5f, size, size), icon,
+                            ScaleMode.ScaleToFit, true);
+            GUI.color = old;
+        }
+
         private static void Ring(Vector2 c, float radius, Color col, int segments, float dotSize)
         {
             for (int i = 0; i < segments; i++)
@@ -110,9 +134,10 @@ namespace FieldNotes
         /// Draw the whole thing. <paramref name="radiusOf"/> hands back the detection radius in
         /// metres for a category, <paramref name="enabled"/> whether that category is switched on.
         /// </summary>
-        internal static void Draw(PoiStore store, Vector3 me, float yawDegrees,
+        internal static void Draw(PoiStore store, List<LiveThing> live, Vector3 me, float yawDegrees,
                                   MinimapSize size, float rangeMetres, float bandMetres,
-                                  float pingHoldSeconds, bool headingUp,
+                                  float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
+                                  float iconScale,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
             float px = PixelsFor(size);
@@ -139,8 +164,10 @@ namespace FieldNotes
             float rot = headingUp ? -yawDegrees : 0f;
 
             float dotPx = Mathf.Max(4f, px * 0.035f);
+            float iconPx = Mathf.Max(10f, px * iconScale);
             float now = Time.realtimeSinceStartup;
 
+            // ---- the discovered notebook ----------------------------------------------------
             foreach (Poi p in store.All)
             {
                 if (!enabled(p.Kind)) continue;
@@ -150,9 +177,8 @@ namespace FieldNotes
                 float dist = d.magnitude;
 
                 // Bearing in screen space. Unity's +Z is north; screen Y grows downward, hence the
-                // negated sine.
-                float bearing = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg + rot;
-                float rad = bearing * Mathf.Deg2Rad;
+                // negated cosine.
+                float rad = (Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg + rot) * Mathf.Deg2Rad;
 
                 if (IsThreat(p.Kind))
                 {
@@ -169,14 +195,9 @@ namespace FieldNotes
                     float alpha = inBand ? 1f : Mathf.Clamp01(1f - (age / pingHoldSeconds));
 
                     // Drawn ON the ring, never at its true scaled distance: the ring IS the reading.
-                    // Its radius already says how far away the thing is, and plotting it properly
-                    // would quietly turn the sensor back into a map.
                     float x = centre.x + Mathf.Sin(rad) * ringPx;
                     float y = centre.y - Mathf.Cos(rad) * ringPx;
-
-                    Color c = ColorOf(p.Kind);
-                    c.a = alpha;
-                    Dot(x, y, dotPx * 1.25f, c);
+                    Mark(x, y, iconPx, p.Kind, p.Label, alpha);
                 }
                 else
                 {
@@ -184,10 +205,42 @@ namespace FieldNotes
                     if (dist * pixelsPerMetre > half - 4f) continue;
                     float x = centre.x + Mathf.Sin(rad) * dist * pixelsPerMetre;
                     float y = centre.y - Mathf.Cos(rad) * dist * pixelsPerMetre;
+                    Mark(x, y, iconPx, p.Kind, p.Label, p.InStock ? 1f : 0.30f);
+                }
+            }
 
-                    Color c = ColorOf(p.Kind);
-                    if (!p.InStock) c.a = 0.28f;   // known, but empty when last seen
-                    Dot(x, y, dotPx, c);
+            // ---- the live layer -------------------------------------------------------------
+            // Drawn on top, and slightly larger, because a thing that is actually THERE should read
+            // ahead of a thing you merely remember.
+            if (live != null)
+            {
+                for (int i = 0; i < live.Count; i++)
+                {
+                    LiveThing t = live[i];
+                    if (!enabled(t.Kind)) continue;
+
+                    Vector3 d = t.Pos - me;
+                    d.y = 0f;
+                    float dist = d.magnitude;
+                    float rad = (Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg + rot) * Mathf.Deg2Rad;
+
+                    if (liveUsesHalo && IsThreat(t.Kind))
+                    {
+                        // Same ring discipline as the notebook, for when the plain version turns out
+                        // to give too much away.
+                        float detect = radiusOf(t.Kind);
+                        if (Mathf.Abs(dist - detect) > bandMetres * 0.5f) continue;
+                        float x = centre.x + Mathf.Sin(rad) * ringPx;
+                        float y = centre.y - Mathf.Cos(rad) * ringPx;
+                        Mark(x, y, iconPx * 1.15f, t.Kind, t.Label, 1f);
+                    }
+                    else
+                    {
+                        if (dist * pixelsPerMetre > half - 4f) continue;
+                        float x = centre.x + Mathf.Sin(rad) * dist * pixelsPerMetre;
+                        float y = centre.y - Mathf.Cos(rad) * dist * pixelsPerMetre;
+                        Mark(x, y, iconPx * 1.15f, t.Kind, t.Label, 1f);
+                    }
                 }
             }
 
@@ -203,7 +256,8 @@ namespace FieldNotes
             GUI.Label(new Rect(box.x + 6f, box.yMax - Mathf.Max(20f, px * 0.09f),
                                box.width - 12f, Mathf.Max(18f, px * 0.085f)),
                       (headingUp ? "^ " : "N ") + Mathf.RoundToInt(rangeMetres) + "m   " +
-                      store.Count + " known");
+                      store.Count + " known" +
+                      (live != null && live.Count > 0 ? "   " + live.Count + " live" : ""));
             GUI.color = Color.white;
         }
     }

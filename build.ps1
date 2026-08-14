@@ -34,6 +34,9 @@ $refs = @(
     (Join-Path $managed 'UnityEngine.IMGUIModule.dll')
     # PhysicsModule: Collider, stripped off the marker quads before they go near the player's face.
     (Join-Path $managed 'UnityEngine.PhysicsModule.dll')
+    # ImageConversionModule: ImageConversion.LoadImage, which turns the icon PNGs on disk into
+    # textures at runtime. This is what lets icons ship as loose files instead of an AssetBundle.
+    (Join-Path $managed 'UnityEngine.ImageConversionModule.dll')
     (Join-Path $core    'BepInEx.dll')
 )
 foreach ($r in $refs) { if (-not (Test-Path $r)) { throw "Missing reference: $r" } }
@@ -76,6 +79,18 @@ try {
     Write-Host "This almost always means Green Hell is still running. Close it and re-run." -ForegroundColor Yellow
     exit 2
 }
+# Icons ship as loose PNGs so a better one can be dropped in without a rebuild.
+$icons = Join-Path $srcDir 'icons'
+if (Test-Path $icons) {
+    $iconDest = Join-Path $dest 'icons'
+    New-Item -ItemType Directory -Force $iconDest | Out-Null
+    Copy-Item (Join-Path $icons '*.png') $iconDest -Force
+    $n = @(Get-ChildItem $iconDest -Filter *.png).Count
+    Write-Host "Copied $n icon(s) -> $iconDest" -ForegroundColor Green
+} else {
+    Write-Host "No icons folder - run icons-src\mkicons.ps1 first." -ForegroundColor Yellow
+}
+
 Write-Host "Deployed -> $dest" -ForegroundColor Green
 Write-Host ""
 Write-Host "Keypad3 minimap on/off   Keypad8 size S/M/L   Keypad9 what do I know" -ForegroundColor Yellow

@@ -133,6 +133,16 @@ namespace FieldNotes
         internal static int ResourceTableSize { get { BuildTables(); return Resources.Count; } }
         internal static int CampTableSize     { get { BuildTables(); return CampGear.Count; } }
 
+        /// <summary>One item, classified. Shared with the live layer so both surfaces agree on what
+        /// a thing is and what it is called.</summary>
+        internal static bool LookUpItem(Enums.ItemID id, out PoiKind kind, out string label)
+        {
+            BuildTables();
+            if (Resources.TryGetValue(id, out label)) { kind = PoiKind.Resource; return true; }
+            if (CampGear.TryGetValue(id, out label))  { kind = PoiKind.Camp; return true; }
+            kind = PoiKind.Resource; label = null; return false;
+        }
+
         // ---- scanning ---------------------------------------------------------------------------
 
         /// <summary>

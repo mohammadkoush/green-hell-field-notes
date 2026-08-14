@@ -47,7 +47,7 @@ namespace FieldNotes
 
         // ---- config ------------------------------------------------------------------------------
         private ConfigEntry<KeyboardShortcut> _keyMinimap, _keySize, _keyPin, _keyUnpin,
-                                              _keyMapMarks, _keyDump, _keyReport;
+                                              _keyMapMarks, _keyDump, _keyReport, _keyLive;
 
         private ConfigEntry<bool>  _minimapOn;
         private ConfigEntry<string> _minimapSize;
@@ -59,6 +59,8 @@ namespace FieldNotes
                                    _showResource, _showCamp, _showManual;
 
         private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
+        private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
+        private ConfigEntry<float> _liveRange, _liveEvery, _iconScale;
         private ConfigEntry<bool>  _mapMarksOn;
         private ConfigEntry<bool>  _flipU, _flipV, _swapUV;
         private ConfigEntry<float> _markerScale;
@@ -91,6 +93,9 @@ namespace FieldNotes
                 "Write map hierarchy and world->map maths to mapdump.txt. For when markers misbehave.");
             _keyReport   = Config.Bind("Keys", "Report", new KeyboardShortcut(KeyCode.Keypad9),
                 "What do I know? A quick count on screen.");
+            // Keypad6, not 5 or 7: Keypad5 belongs to another mod and Keypad7 to Pickup Doctor.
+            _keyLive     = Config.Bind("Keys", "ToggleLiveLayer", new KeyboardShortcut(KeyCode.Keypad6),
+                "Show what is actually out there right now, on top of what you remember.");
 
             _minimapOn   = Config.Bind("Minimap", "Enabled", true, "Show the minimap at all.");
             _minimapSize = Config.Bind("Minimap", "Size", "Medium",
@@ -158,6 +163,30 @@ namespace FieldNotes
                     "indistinguishable from continuous at walking pace.",
                     new AcceptableValueRange<float>(0.25f, 30f)));
 
+            // The live layer. This is a genuine reversal of the original design - the mod was built
+            // to mark the SPAWN POINT and never the animal, which is what made it a scouting tool
+            // rather than a radar. Live tracking cannot be earned, only switched on. It is a
+            // separate layer for exactly that reason: the notebook underneath is untouched, and
+            // LiveUsesHalo puts the tension back if the plain version gives too much away.
+            _liveOn = Config.Bind("Live", "Enabled", true,
+                "Show what is actually out there right now, not just where it comes from.");
+            _liveAnimals = Config.Bind("Live", "Animals", true, "Live predators, snakes, critters, humans.");
+            _livePlants = Config.Bind("Live", "Plants", true, "Live fruit, plants and camp gear.");
+            _liveRange = Config.Bind("Live", "RangeMetres", 120f,
+                new ConfigDescription("How far out live things are gathered.",
+                    new AcceptableValueRange<float>(20f, 600f)));
+            _liveEvery = Config.Bind("Live", "RefreshSeconds", 0.25f,
+                new ConfigDescription("Nothing here moves fast enough for 60Hz to look different.",
+                    new AcceptableValueRange<float>(0.05f, 3f)));
+            _liveHalo = Config.Bind("Live", "LiveUsesHalo", false,
+                "On: live threats obey the same detection ring as remembered ones, appearing only " +
+                "as they cross the band. Off: they are simply shown. Try both and keep the better " +
+                "game.");
+
+            _iconScale = Config.Bind("Minimap", "IconScale", 0.115f,
+                new ConfigDescription("Icon size as a share of the minimap box.",
+                    new AcceptableValueRange<float>(0.03f, 0.3f)));
+
             _mapMarksOn = Config.Bind("Map", "DrawOnGameMap", true,
                 "Draw the notebook onto the game's own map pages.");
             _flipU = Config.Bind("Map", "FlipU", false,
@@ -170,8 +199,13 @@ namespace FieldNotes
                 new ConfigDescription("Marker size as a share of the page.",
                     new AcceptableValueRange<float>(0.004f, 0.12f)));
 
+            Icons.LoadAll(PluginDir());
+            Logger.LogInfo("icons: " + Icons.Loaded + " loaded from " + Icons.Dir +
+                           (Icons.LastError.Length > 0 ? "  (" + Icons.LastError + ")" : ""));
+
             Logger.LogInfo(Name + " " + Version + " loaded. Keypad3 minimap, Keypad8 size, " +
-                           "Keypad4 pin, Keypad2 map markers, Keypad9 report, Keypad1 diagnostics.");
+                           "Keypad4 pin, Keypad2 map markers, Keypad9 report, Keypad1 diagnostics, " +
+                           "Keypad6 live layer.");
         }
 
         // ---- helpers ---------------------------------------------------------------------------
@@ -228,6 +262,13 @@ namespace FieldNotes
             try { return MainLevel.s_GameTime; } catch { return 0f; }
         }
 
+        /// <summary>Live things, merged so one palm is one icon, or null when the layer is off.</summary>
+        private List<LiveThing> LiveList()
+        {
+            if (!_liveOn.Value) return null;
+            return Live.Merged(_mergeRadius.Value);
+        }
+
         // ---- loop --------------------------------------------------------------------------------
 
         private void Update()
@@ -265,11 +306,15 @@ namespace FieldNotes
                     Scan(p.transform.position);
                 }
 
+                if (_liveOn.Value)
+                    Live.Refresh(p.transform.position, _liveRange.Value, _liveAnimals.Value,
+                                 _livePlants.Value, _liveEvery.Value);
+
                 if (_mapMarksOn.Value && Time.time >= _nextMarkerRefreshAt)
                 {
                     _nextMarkerRefreshAt = Time.time + 1f;
-                    _markers.Refresh(_store, Enabled, _flipU.Value, _flipV.Value, _swapUV.Value,
-                                     _markerScale.Value);
+                    _markers.Refresh(_store, LiveList(), Enabled, _flipU.Value, _flipV.Value,
+                                     _swapUV.Value, _markerScale.Value);
                 }
 
                 _store.SaveIfDirty(5f);
@@ -304,6 +349,14 @@ namespace FieldNotes
                 if (!_mapMarksOn.Value) _markers.Clear(); else _nextMarkerRefreshAt = 0f;
                 Begin(); Say("map markers " + (_mapMarksOn.Value ? "on" : "off") +
                              (_markers.LastNote.Length > 0 ? "  -  " + _markers.LastNote : ""));
+            }
+
+            if (_keyLive.Value.IsDown())
+            {
+                _liveOn.Value = !_liveOn.Value;
+                _nextMarkerRefreshAt = 0f;
+                Begin(); Say("live layer " + (_liveOn.Value ? "on" : "off") +
+                             (_liveOn.Value ? "  (" + Live.Count + " things nearby)" : ""));
             }
 
             if (_keyPin.Value.IsDown()) DropPin();
@@ -407,6 +460,8 @@ namespace FieldNotes
                 "   snakes " + _store.CountOf(PoiKind.Snake) +
                 "   critters " + _store.CountOf(PoiKind.Critter) +
                 "   savages " + _store.CountOf(PoiKind.Savage));
+            Say("  live now: " + (_liveOn.Value ? Live.Count + " nearby" : "layer off") +
+                "   icons: " + Icons.Loaded);
             Say("  notebook: " + _store.Path_);
             if (_markers.LastNote.Length > 0) Say("  map: " + _markers.LastNote);
         }
@@ -427,9 +482,10 @@ namespace FieldNotes
                 {
                     float yaw = (Camera.main != null ? Camera.main.transform.eulerAngles.y
                                                      : p.transform.eulerAngles.y);
-                    Minimap.Draw(_store, p.transform.position, yaw, Size(),
+                    Minimap.Draw(_store, LiveList(), p.transform.position, yaw, Size(),
                                  _minimapRange.Value, _band.Value, _pingHold.Value,
-                                 _headingUp.Value, RadiusOf, Enabled);
+                                 _headingUp.Value, _liveHalo.Value, _iconScale.Value,
+                                 RadiusOf, Enabled);
                 }
             }
 
