@@ -137,7 +137,7 @@ namespace FieldNotes
         internal static void Draw(PoiStore store, List<LiveThing> live, Vector3 me, float yawDegrees,
                                   MinimapSize size, float rangeMetres, float bandMetres,
                                   float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
-                                  float iconScale,
+                                  float iconScale, bool hideEmpty,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
             float px = PixelsFor(size);
@@ -201,6 +201,11 @@ namespace FieldNotes
                 }
                 else
                 {
+                    // A tree with nothing on it is not a place worth walking to, so it is not drawn.
+                    // The POI stays in the notebook - hidden, not forgotten - so it comes back by
+                    // itself when the tree fruits again rather than needing rediscovering.
+                    if (hideEmpty && !p.InStock) continue;
+
                     // Larder: plotted honestly, and only inside the box.
                     if (dist * pixelsPerMetre > half - 4f) continue;
                     float x = centre.x + Mathf.Sin(rad) * dist * pixelsPerMetre;

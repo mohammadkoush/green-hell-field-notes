@@ -101,6 +101,13 @@ namespace FieldNotes
                 if (k.Contains("jaguar") || k.Contains("puma") || k.Contains("panther") ||
                     k.Contains("caiman"))    return Get("predator");
 
+                // Humans, by their AIID names. Listed before the category fallback so a Spearman
+                // never has the chance to be mistaken for a beast.
+                if (k.Contains("savage") || k.Contains("spearman") || k.Contains("thug") ||
+                    k.Contains("hunter") || k.Contains("regular") || k.Contains("tribe"))
+                                             return Get("savage");
+                if (k.Contains("kid"))       return Get("kid");
+
                 if (k.Contains("coconut"))   return Get("coconut");
                 if (k.Contains("banana"))    return Get("banana");
                 if (k.Contains("papaya"))    return Get("papaya");
@@ -123,7 +130,13 @@ namespace FieldNotes
                 case PoiKind.Snake:    return Get("snake");
                 case PoiKind.Critter:  return Get("spider");
                 case PoiKind.Camp:     return Get("camp");
-                case PoiKind.Savage:   return Get("predator");
+
+                // NOT the panther. It used to fall through to Get("predator") as a stand-in for
+                // missing human art, and the result was savages drawn as wildcats - which is worse
+                // than no icon at all, because a wrong icon reads as a correct one. If savage.png is
+                // absent this returns null and the draw path falls back to a plain orange dot:
+                // "something, and it is not an animal" is honest, a panther is not.
+                case PoiKind.Savage:   return Get("savage");
                 case PoiKind.Resource: return Get("plant");
                 default:               return null;    // his own pins stay a plain dot
             }

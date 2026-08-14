@@ -184,7 +184,7 @@ namespace FieldNotes
         /// Called on a timer, so it must be cheap to say "nothing to do".
         /// </summary>
         internal void Refresh(PoiStore store, List<LiveThing> live, Func<PoiKind, bool> enabled,
-                              bool flipU, bool flipV, bool swapUV, float markerScale)
+                              bool flipU, bool flipV, bool swapUV, float markerScale, bool hideEmpty)
         {
             string label;
             GameObject page = GetNotepadPage(out label);
@@ -216,6 +216,10 @@ namespace FieldNotes
             foreach (Poi p in store.All)
             {
                 if (!enabled(p.Kind)) continue;
+
+                // Same rule as the minimap: an empty tree is not drawn. Hidden, not forgotten.
+                if (hideEmpty && !p.InStock &&
+                    (p.Kind == PoiKind.Resource || p.Kind == PoiKind.Camp)) continue;
 
                 Vector2 uv;
                 if (!WorldToMapUV(p.Pos, out uv)) { LastNote = "no world dummies on MapTab"; return; }

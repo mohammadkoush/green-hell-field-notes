@@ -190,5 +190,79 @@ foreach ($p in $picks) {
     Convert-Icon -Path $plants -X $cell.X -Y $cell.Y -W $cell.W -H $cell.H -Mode keepcolor -OutName $p.n
 }
 
+Write-Host "People" -ForegroundColor Cyan
+
+# DRAWN, not cut, because no human artwork was supplied and the stand-in that was used instead - the
+# panther - made savages show up as wildcats. A wrong icon is worse than no icon, because it reads as
+# a correct one. These are deliberately plain silhouettes: a figure with a spear, and a smaller
+# figure without. At 64px on a map, unmistakably-a-person is the whole job.
+#
+# Both are placeholders in the sense that dropping a better savage.png or kid.png into the icons
+# folder overrides them with no code change - the icon lookup matches on filename.
+function New-Figure {
+    param([string]$OutName, [bool]$WithSpear, [double]$HeadScale, [double]$Height)
+
+    $S = 256
+    $bmp = New-Object System.Drawing.Bitmap $S, $S, ([System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $g = [System.Drawing.Graphics]::FromImage($bmp)
+    $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+    $g.Clear([System.Drawing.Color]::FromArgb(0, 0, 0, 0))
+
+    $white = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
+    $pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), 15
+    $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+
+    # Everything hangs off these three numbers so the child is the same drawing with a bigger head
+    # and shorter legs, which is how you read "child" at a glance.
+    $top = 30.0
+    $headR = 26.0 * $HeadScale
+    $cx = 104.0
+
+    $headY = $top + $headR
+    $shoulder = $headY + $headR + 14
+    $hip = $shoulder + 66 * $Height
+    $foot = $hip + 76 * $Height
+
+    $g.FillEllipse($white, [single]($cx - $headR), [single]($headY - $headR),
+                   [single]($headR * 2), [single]($headR * 2))
+
+    # Torso, arms, legs - drawn as thick round-capped strokes so the figure holds together at 64px
+    # instead of breaking into thin lines.
+    $g.DrawLine($pen, [single]$cx, [single]$shoulder, [single]$cx, [single]$hip)
+    $g.DrawLine($pen, [single]$cx, [single]($shoulder + 8), [single]($cx - 44), [single]($shoulder + 62))
+    $g.DrawLine($pen, [single]$cx, [single]($shoulder + 8), [single]($cx + 40), [single]($shoulder + 44))
+    $g.DrawLine($pen, [single]$cx, [single]$hip, [single]($cx - 34), [single]$foot)
+    $g.DrawLine($pen, [single]$cx, [single]$hip, [single]($cx + 34), [single]$foot)
+
+    if ($WithSpear) {
+        $spearPen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White), 9
+        $spearPen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $spearPen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $sx = $cx + 62
+        $g.DrawLine($spearPen, [single]$sx, [single]($top - 4), [single]($sx - 16), [single]($foot + 14))
+        # A head on the spear, so it is a weapon and not a walking stick.
+        $tip = New-Object 'System.Drawing.PointF[]' 3
+        $tip[0] = New-Object System.Drawing.PointF ([single]$sx), ([single]($top - 26))
+        $tip[1] = New-Object System.Drawing.PointF ([single]($sx - 16)), ([single]($top + 16))
+        $tip[2] = New-Object System.Drawing.PointF ([single]($sx + 16)), ([single]($top + 12))
+        $g.FillPolygon($white, $tip)
+        $spearPen.Dispose()
+    }
+
+    $pen.Dispose(); $white.Dispose(); $g.Dispose()
+
+    # Down to icon size through the same auto-crop and centring as everything else, so a person
+    # carries the same visual weight as a jaguar.
+    $tmp = Join-Path $env:TEMP ("fieldnotes-" + $OutName)
+    $bmp.Save($tmp, [System.Drawing.Imaging.ImageFormat]::Png)
+    $bmp.Dispose()
+    Convert-Icon -Path $tmp -X 0 -Y 0 -W 0 -H 0 -Mode chroma -Tolerance 8 -OutName $OutName
+    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+}
+
+New-Figure -OutName 'savage.png' -WithSpear $true  -HeadScale 1.0 -Height 1.0
+New-Figure -OutName 'kid.png'    -WithSpear $false -HeadScale 1.3 -Height 0.72
+
 Write-Host ""
 Write-Host "Icons written to $OutDir" -ForegroundColor Yellow

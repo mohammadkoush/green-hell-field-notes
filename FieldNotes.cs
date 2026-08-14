@@ -56,7 +56,7 @@ namespace FieldNotes
 
         private ConfigEntry<float> _rPredator, _rSavage, _rSnake, _rCritter;
         private ConfigEntry<bool>  _showPredator, _showSavage, _showSnake, _showCritter,
-                                   _showResource, _showCamp, _showManual;
+                                   _showResource, _showCamp, _showManual, _hideEmpty;
 
         private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
@@ -139,6 +139,14 @@ namespace FieldNotes
             _showResource = Config.Bind("Show", "Resources", true, "Food and water worth walking to.");
             _showCamp     = Config.Bind("Show", "CampGear", true, "");
             _showManual   = Config.Bind("Show", "YourOwnPins", true, "");
+
+            // A tree with nothing on it is not a place worth walking to. The POI is kept in the
+            // notebook either way - hidden, not forgotten - so it reappears by itself when the tree
+            // fruits again instead of needing rediscovering. Turn this off and empties come back as
+            // faded ghosts, which is the only thing on screen that says "you have been here and it
+            // was bare".
+            _hideEmpty = Config.Bind("Show", "HideEmptyResources", true,
+                "Do not draw a resource that had nothing on it when you last looked.");
 
             _discoverRadius = Config.Bind("Discovery", "DiscoverRadius", 28f,
                 new ConfigDescription("How close you must get before something is written down. " +
@@ -314,7 +322,7 @@ namespace FieldNotes
                 {
                     _nextMarkerRefreshAt = Time.time + 1f;
                     _markers.Refresh(_store, LiveList(), Enabled, _flipU.Value, _flipV.Value,
-                                     _swapUV.Value, _markerScale.Value);
+                                     _swapUV.Value, _markerScale.Value, _hideEmpty.Value);
                 }
 
                 _store.SaveIfDirty(5f);
@@ -485,7 +493,7 @@ namespace FieldNotes
                     Minimap.Draw(_store, LiveList(), p.transform.position, yaw, Size(),
                                  _minimapRange.Value, _band.Value, _pingHold.Value,
                                  _headingUp.Value, _liveHalo.Value, _iconScale.Value,
-                                 RadiusOf, Enabled);
+                                 _hideEmpty.Value, RadiusOf, Enabled);
                 }
             }
 
