@@ -95,6 +95,26 @@ namespace FieldNotes
             {
                 if (k.Contains("stingray"))  return Get("stingray");
                 if (k.Contains("piranha") || k.Contains("vampirefish")) return Get("stingray");
+
+                // Food and the rest, matched on the species name the game itself uses. Substring
+                // tests, so Tapir_baby, ArmadilloThreeBanded and RedFootedTortoise all land without
+                // being listed one by one.
+                if (k.Contains("tapir"))     return Get("tapir");
+                if (k.Contains("capybara"))  return Get("capybara");
+                if (k.Contains("peccary"))   return Get("peccary");
+                if (k.Contains("agouti"))    return Get("agouti");
+                if (k.Contains("armadillo")) return Get("armadillo");
+                if (k.Contains("tortoise") || k.Contains("turtle")) return Get("turtle");
+                if (k.Contains("mouse"))     return Get("mouse");
+                if (k.Contains("anteater"))  return Get("anteater");
+                if (k.Contains("tamarin") || k.Contains("atelinae")) return Get("monkey");
+                if (k.Contains("iguana") || k.Contains("caimanlizard")) return Get("lizard");
+                if (k.Contains("crab"))      return Get("crab");
+                if (k.Contains("toad") || k.Contains("frog")) return Get("frog");
+                if (k.Contains("arowana") || k.Contains("bass") || k.Contains("angelfish") ||
+                    k.Contains("discus"))    return Get("fish");
+                if (k.Contains("prawn") || k.Contains("caterpillar") || k.Contains("beetle"))
+                                             return Get("bug");
                 if (k.Contains("scorpion"))  return Get("scorpion");
                 if (k.Contains("spider") || k.Contains("birdeater") || k.Contains("centipede"))
                                              return Get("spider");
@@ -103,12 +123,22 @@ namespace FieldNotes
                 if (k.Contains("jaguar") || k.Contains("puma") || k.Contains("panther") ||
                     k.Contains("caiman"))    return Get("predator");
 
-                // Humans, by their AIID names. Listed before the category fallback so a Spearman
-                // never has the chance to be mistaken for a beast.
-                if (k.Contains("savage") || k.Contains("spearman") || k.Contains("thug") ||
-                    k.Contains("hunter") || k.Contains("regular") || k.Contains("tribe"))
-                                             return Get("savage");
-                if (k.Contains("kid"))       return Get("kid");
+                // HUMANS ARE DRAWN BY THEIR WEAPON, not as a figure.
+                //
+                // The stick figure is gone - it looked amateur, which matters for a published mod,
+                // and a weapon says more anyway. A bow means it shoots from range, a spear means
+                // reach, an axe means it is already too close. The icon stops being decoration and
+                // starts being the thing you needed to know.
+                //
+                // Listed before the category fallback so a Spearman never has the chance to be
+                // mistaken for a beast.
+                if (k.Contains("hunter"))    return Get("bow");
+                if (k.Contains("spearman"))  return Get("spear");
+                if (k.Contains("thug") || k.Contains("savage")) return Get("axe");
+                // Unarmed, and the kid, both fall back to the caveman: a person with no weapon to
+                // show is still a person, and a child is not a threat to draw a blade for.
+                if (k.Contains("regular") || k.Contains("tribe") || k.Contains("kid"))
+                                             return Get("caveman");
 
                 if (k.Contains("coconut"))   return Get("coconut");
                 if (k.Contains("banana"))    return Get("banana");
@@ -132,6 +162,7 @@ namespace FieldNotes
                 case PoiKind.Snake:    return Get("snake");
                 case PoiKind.Critter:  return Get("spider");
                 case PoiKind.Camp:     return Get("camp");
+                case PoiKind.Food:     return Get("capybara");   // generic four-legged fallback
 
                 // NOT the panther. It used to fall through to Get("predator") as a stand-in for
                 // missing human art, and the result was savages drawn as wildcats - which is worse

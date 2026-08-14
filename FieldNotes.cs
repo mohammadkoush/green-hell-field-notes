@@ -56,7 +56,7 @@ namespace FieldNotes
 
         private ConfigEntry<float> _rPredator, _rSavage, _rSnake, _rCritter;
         private ConfigEntry<bool>  _showPredator, _showSavage, _showSnake, _showCritter,
-                                   _showResource, _showCamp, _showManual, _hideEmpty;
+                                   _showResource, _showCamp, _showManual, _hideEmpty, _showFood;
 
         private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
@@ -147,6 +147,9 @@ namespace FieldNotes
             _showCritter  = Config.Bind("Show", "Critters", true, "");
             _showResource = Config.Bind("Show", "Resources", true, "Food and water worth walking to.");
             _showCamp     = Config.Bind("Show", "CampGear", true, "");
+            _showFood     = Config.Bind("Show", "FoodAnimals", true,
+                "Tapir, capybara, peccary, agouti, armadillo, tortoise, birds and the rest. Drawn " +
+                "like your larder rather than pinged on the halo - they are not threats.");
             _showManual   = Config.Bind("Show", "YourOwnPins", true, "");
 
             // A tree with nothing on it is not a place worth walking to. The POI is kept in the
@@ -278,6 +281,7 @@ namespace FieldNotes
                 case PoiKind.Critter:  return _showCritter.Value;
                 case PoiKind.Resource: return _showResource.Value;
                 case PoiKind.Camp:     return _showCamp.Value;
+                case PoiKind.Food:     return _showFood.Value;
                 default:               return _showManual.Value;
             }
         }
@@ -506,7 +510,8 @@ namespace FieldNotes
         {
             Begin();
             Say("Field Notes - " + _store.Count + " places known");
-            Say("  resources " + _store.CountOf(PoiKind.Resource) +
+            Say("  food " + _store.CountOf(PoiKind.Food) +
+                "   resources " + _store.CountOf(PoiKind.Resource) +
                 "   camp gear " + _store.CountOf(PoiKind.Camp) +
                 "   your pins " + _store.CountOf(PoiKind.Manual));
             Say("  predators " + _store.CountOf(PoiKind.Predator) +

@@ -71,6 +71,50 @@ namespace FieldNotes
                 case AIs.AI.AIID.VampireFish:
                     kind = PoiKind.Critter; return true;
 
+                // FOOD. The biggest hole in the whole set until now - the most useful thing a map in
+                // this game could carry, and none of it was tracked at all. Drawn like the larder
+                // rather than pinged on the halo: these are not threats, and a thing you want to
+                // walk towards should not behave like a thing you want to avoid.
+                // Taken from the actual AIID enum, all 64 of it, rather than from memory - the first
+                // attempt listed ParrotMacaw, Toucan and Bat and none of them exist. BIRDS AND BATS
+                // HAVE NO AIID: they live under Prefabs/AI/FlyingAIs and are outside this enum
+                // entirely, so nothing here can classify them and no icon will ever be asked for.
+                // That is a separate system and a separate day's work.
+                case AIs.AI.AIID.Tapir:
+                case AIs.AI.AIID.Tapir_baby:
+                case AIs.AI.AIID.Capybara:
+                case AIs.AI.AIID.Peccary:
+                case AIs.AI.AIID.Agouti:
+                case AIs.AI.AIID.Armadillo:
+                case AIs.AI.AIID.ArmadilloThreeBanded:
+                case AIs.AI.AIID.Mouse:
+                case AIs.AI.AIID.GiantAnteater:
+                case AIs.AI.AIID.GoldenLionTamarin:
+                case AIs.AI.AIID.Atelinae:
+                case AIs.AI.AIID.RedFootedTortoise:
+                case AIs.AI.AIID.MudTurtle:
+                case AIs.AI.AIID.GreenIguana:
+                case AIs.AI.AIID.CaimanLizard:
+                case AIs.AI.AIID.Crab:
+                case AIs.AI.AIID.Prawn:
+                case AIs.AI.AIID.CaneToad:
+                case AIs.AI.AIID.Arowana:
+                case AIs.AI.AIID.PeacockBass:
+                case AIs.AI.AIID.AngelFish:
+                case AIs.AI.AIID.DiscusFish:
+                case AIs.AI.AIID.Caterpillar:
+                case AIs.AI.AIID.Beetle:
+                    kind = PoiKind.Food; return true;
+
+                // The stalker is a predator in every way that matters to a player.
+                case AIs.AI.AIID.Stalker:
+                    kind = PoiKind.Predator; return true;
+
+                // Poisonous rather than edible - touching one is the problem, so it belongs with the
+                // things you want to know about before you tread on them.
+                case AIs.AI.AIID.PoisonDartFrog:
+                    kind = PoiKind.Critter; return true;
+
                 default:
                     return false;   // everything else is scenery as far as this mod is concerned
             }

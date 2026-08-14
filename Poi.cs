@@ -36,6 +36,7 @@ namespace FieldNotes
         Snake,
         Critter,    // spiders, scorpions, centipedes
         Camp,       // camp gear and abandoned camps
+        Food,       // huntable animals - tapir, capybara, peccary, agouti, armadillo, turtle...
         Manual      // a pin he dropped himself
     }
 
