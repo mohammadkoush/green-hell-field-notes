@@ -100,9 +100,66 @@ function Convert-Icon {
                 if ($a -lt 20) { $a = 0 } else { $a = [Math]::Min(255, [int]($a * 2.2)) }
                 $b[$i + 3] = [byte]$a
             }
+            elseif ($Mode -eq 'badge') {
+                # Handled in a second pass below - the disc has to be located before any pixel can
+                # be judged, so nothing useful can be decided one pixel at a time here.
+            }
             else {
                 $d = [Math]::Abs($rr - $bgR) + [Math]::Abs($gg - $bgG) + [Math]::Abs($bb - $bgB)
                 if ($d -lt $Tolerance) { $b[$i + 3] = 0 }
+            }
+        }
+    }
+
+    # BADGE: the subject is the NEGATIVE SPACE inside a coloured disc.
+    #
+    # The cassava source is a brown circle with the root cut out of it in white, sitting on a
+    # transparency checkerboard. Every other mode gets this exactly backwards - "remove the white
+    # background" would remove the plant and keep the disc. So: find the disc, and inside it keep
+    # only what is white.
+    #
+    # The circle test is what makes it safe. The checkerboard outside the disc is near-white too, so
+    # cropping to the disc's bounding BOX is not enough - the corners of that box are still
+    # background. Only pixels within the disc's radius are considered at all.
+    if ($Mode -eq 'badge') {
+        $dMinX = $p.W; $dMinY = $p.H; $dMaxX = -1; $dMaxY = -1
+        for ($y = 0; $y -lt $p.H; $y++) {
+            $row = $y * $stride
+            for ($x = 0; $x -lt $p.W; $x++) {
+                $i = $row + $x * 4
+                $bb = $b[$i]; $gg = $b[$i + 1]; $rr = $b[$i + 2]
+                # Brown: red leads, blue trails, and it is not a pale checker square.
+                if ($rr -gt 50 -and $rr -gt ($gg + 15) -and $gg -gt ($bb + 5)) {
+                    if ($x -lt $dMinX) { $dMinX = $x }
+                    if ($x -gt $dMaxX) { $dMaxX = $x }
+                    if ($y -lt $dMinY) { $dMinY = $y }
+                    if ($y -gt $dMaxY) { $dMaxY = $y }
+                }
+            }
+        }
+
+        if ($dMaxX -lt 0) { Write-Host "  $OutName : no disc found" -ForegroundColor Red; return }
+
+        $ccx = ($dMinX + $dMaxX) / 2.0
+        $ccy = ($dMinY + $dMaxY) / 2.0
+        # Pull the radius in slightly so the disc's own antialiased rim never counts as subject.
+        $rad = [Math]::Min(($dMaxX - $dMinX), ($dMaxY - $dMinY)) / 2.0 * 0.96
+        $rad2 = $rad * $rad
+
+        for ($y = 0; $y -lt $p.H; $y++) {
+            $row = $y * $stride
+            $dy = $y - $ccy
+            for ($x = 0; $x -lt $p.W; $x++) {
+                $i = $row + $x * 4
+                $dx = $x - $ccx
+                if (($dx*$dx + $dy*$dy) -gt $rad2) { $b[$i + 3] = 0; continue }
+
+                $bb = $b[$i]; $gg = $b[$i + 1]; $rr = $b[$i + 2]
+                $minc = [Math]::Min($rr, [Math]::Min($gg, $bb))
+                if ($minc -lt 150) { $b[$i + 3] = 0; continue }   # the disc itself
+                # Ramp so the cut edges keep their antialiasing instead of going blocky.
+                $a = [Math]::Min(255, [int](($minc - 150) * 2.6))
+                $b[$i] = 255; $b[$i + 1] = 255; $b[$i + 2] = 255; $b[$i + 3] = [byte]$a
             }
         }
     }
@@ -162,7 +219,7 @@ function Cell { param([int]$col, [int]$row) return @{ X = $col * $cw; Y = [int](
 
 Write-Host "Creatures" -ForegroundColor Cyan
 # Beige background with a pattern printed on it, so this one is chroma-keyed off a sampled corner.
-Convert-Icon -Path $snake -X 0 -Y 0 -W 0 -H 0 -Mode chroma -Tolerance 95 -OutName 'snake.png'
+# snake.png is drawn now, not keyed from the colour illustration - see draw-icons.ps1.
 # The watermark lives in the bottom strip; cut it off before anything else looks at the picture.
 Convert-Icon -Path $spider -X 0 -Y 10 -W 260 -H 215 -Mode silhouette -OutName 'spider.png'
 Convert-Icon -Path $scorpion -X 0 -Y 0 -W 0 -H 0 -Mode silhouette -OutName 'scorpion.png'
@@ -170,25 +227,24 @@ Convert-Icon -Path $scorpion -X 0 -Y 0 -W 0 -H 0 -Mode silhouette -OutName 'scor
 # the two head crests would just be a dark blob.
 Convert-Icon -Path $cats -X 395 -Y 80 -W 232 -H 210 -Mode silhouette -OutName 'predator.png'
 
-Write-Host "Plants" -ForegroundColor Cyan
-# Top left of the four, whole and stemmed.
-Convert-Icon -Path $coconut -X 0 -Y 0 -W 250 -H 250 -Mode keepcolor -OutName 'coconut.png'
-
-$picks = @(
-    @{ c = 2; r = 1; n = 'banana.png'    },   # broad tree
-    @{ c = 4; r = 1; n = 'molineria.png' },   # berries on a stem
-    @{ c = 1; r = 3; n = 'papaya.png'    },   # gourd on the ground
-    @{ c = 2; r = 3; n = 'cassava.png'   },   # leaves with a root system
-    @{ c = 4; r = 4; n = 'palmheart.png' },   # grass tuft
-    @{ c = 4; r = 2; n = 'mushroom.png'  },   # squat cactus reads as a mushroom at 64px
-    @{ c = 0; r = 1; n = 'plant.png'     }    # leafy stem - the fallback for anything unmapped
-)
-# birdnest and camp used to be cut from this sheet - a wheat sheaf and a sunflower. Both are drawn
-# properly further down instead; neither ever looked like what it claimed to be.
-foreach ($p in $picks) {
-    $cell = Cell $p.c $p.r
-    Convert-Icon -Path $plants -X $cell.X -Y $cell.Y -W $cell.W -H $cell.H -Mode keepcolor -OutName $p.n
+Write-Host "The two I could not draw" -ForegroundColor Cyan
+# Both supplied after four failed attempts each at drawing them. Black-on-white goes through the
+# normal silhouette path; the cassava is a badge - a brown disc with the root cut out of it in
+# white - so it needs the mode that keeps the NEGATIVE space.
+$anteaterSrc = Join-Path $SrcDir 'shot-20260814-194840.png'
+$cassavaSrc  = Join-Path $SrcDir 'shot-20260814-194941.png'
+if (Test-Path $anteaterSrc) {
+    Convert-Icon -Path $anteaterSrc -X 0 -Y 0 -W 0 -H 0 -Mode silhouette -OutName 'anteater.png'
 }
+if (Test-Path $cassavaSrc) {
+    Convert-Icon -Path $cassavaSrc -X 0 -Y 0 -W 0 -H 0 -Mode badge -OutName 'cassava.png'
+}
+
+# PLANTS AND THE COCONUT ARE NO LONGER CUT HERE. They are drawn white by draw-icons.ps1, because
+# the set went all-silhouette. Leaving the colour cuts in place meant whichever script ran LAST won
+# the filename - and since this one usually ran last, the colour versions kept coming back and the
+# white redraws silently vanished. A pipeline that writes the same filename from two places has no
+# error to show you.
 
 Write-Host "People" -ForegroundColor Cyan
 
@@ -261,8 +317,8 @@ function New-Figure {
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
 }
 
-New-Figure -OutName 'savage.png' -WithSpear $true  -HeadScale 1.0 -Height 1.0
-New-Figure -OutName 'kid.png'    -WithSpear $false -HeadScale 1.3 -Height 0.72
+# savage.png and kid.png are gone: humans are drawn by their WEAPON now (bow, spear, axe)
+# and the unarmed one uses the caveman from draw-icons.ps1.
 
 Write-Host "Drawn shapes" -ForegroundColor Cyan
 
