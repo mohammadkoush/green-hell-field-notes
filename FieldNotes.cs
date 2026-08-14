@@ -47,7 +47,7 @@ namespace FieldNotes
 
         // ---- config ------------------------------------------------------------------------------
         private ConfigEntry<KeyboardShortcut> _keyMinimap, _keySize, _keyPin, _keyUnpin,
-                                              _keyMapMarks, _keyDump, _keyReport, _keyLive;
+                                              _keyMapMarks, _keyDump, _keyReport, _keyLive, _keySpawns;
 
         private ConfigEntry<bool>  _minimapOn;
         private ConfigEntry<string> _minimapSize;
@@ -60,6 +60,7 @@ namespace FieldNotes
 
         private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
+        private ConfigEntry<bool>  _spawnsOn, _showNorth;
         private ConfigEntry<float> _liveRange, _liveEvery, _iconScale;
         private ConfigEntry<bool>  _mapMarksOn;
         private ConfigEntry<bool>  _flipU, _flipV, _swapUV;
@@ -96,6 +97,14 @@ namespace FieldNotes
             // Keypad6, not 5 or 7: Keypad5 belongs to another mod and Keypad7 to Pickup Doctor.
             _keyLive     = Config.Bind("Keys", "ToggleLiveLayer", new KeyboardShortcut(KeyCode.Keypad6),
                 "Show what is actually out there right now, on top of what you remember.");
+            // SHIFT + Keypad6, because there is no free keypad key left: this mod already owns
+            // 0,1,2,3,4,6,8,9, Keypad5 belongs to another mod and Keypad7 to Pickup Doctor. Pairing
+            // the spawn layer with the live layer on the same key plus a modifier is also the right
+            // shape - they are the two halves of one idea.
+            _keySpawns   = Config.Bind("Keys", "ToggleSpawnLayer",
+                new KeyboardShortcut(KeyCode.Keypad6, KeyCode.LeftShift),
+                "Shift+Keypad6. Show or hide remembered creature spawn points. Your resources and " +
+                "your own pins are not affected.");
 
             _minimapOn   = Config.Bind("Minimap", "Enabled", true, "Show the minimap at all.");
             _minimapSize = Config.Bind("Minimap", "Size", "Medium",
@@ -190,6 +199,23 @@ namespace FieldNotes
                 "On: live threats obey the same detection ring as remembered ones, appearing only " +
                 "as they cross the band. Off: they are simply shown. Try both and keep the better " +
                 "game.");
+
+            // The spawn layer, as a whole, mirroring Live/Enabled. Until now the discovered layer
+            // had only the seven per-category switches under [Show] - and those are shared by BOTH
+            // layers, so hiding predators hid live jaguars too. Two conceptually separate layers and
+            // only one of them could be switched off; this is the missing half.
+            //
+            // Creature spawns only. "Turn off spawn creatures" was the ask, and the larder is the
+            // half worth keeping.
+            _spawnsOn = Config.Bind("Spawns", "Enabled", true,
+                "Show remembered creature spawn points. Off leaves your resources and your own pins " +
+                "alone - it only hides where things come from. Turning this off is also the quickest " +
+                "way to find out whether a mark on the minimap is a spawn point or part of the " +
+                "compass.");
+
+            _showNorth = Config.Bind("Minimap", "ShowNorth", true,
+                "Draw the north tick on the minimap rim. Only ever drawn in heading-up mode - with " +
+                "north-up it would always be straight up and would say nothing.");
 
             _iconScale = Config.Bind("Minimap", "IconScale", 0.115f,
                 new ConfigDescription("Icon size as a share of the minimap box.",
@@ -322,7 +348,8 @@ namespace FieldNotes
                 {
                     _nextMarkerRefreshAt = Time.time + 1f;
                     _markers.Refresh(_store, LiveList(), Enabled, _flipU.Value, _flipV.Value,
-                                     _swapUV.Value, _markerScale.Value, _hideEmpty.Value);
+                                     _swapUV.Value, _markerScale.Value, _hideEmpty.Value,
+                                     _spawnsOn.Value);
                 }
 
                 _store.SaveIfDirty(5f);
@@ -359,6 +386,17 @@ namespace FieldNotes
                              (_markers.LastNote.Length > 0 ? "  -  " + _markers.LastNote : ""));
             }
 
+            // Checked BEFORE the live key: Shift+Keypad6 also satisfies plain Keypad6, so without
+            // this order one press would flip both layers at once.
+            if (_keySpawns.Value.IsDown())
+            {
+                _spawnsOn.Value = !_spawnsOn.Value;
+                _nextMarkerRefreshAt = 0f;
+                Begin(); Say("spawn layer " + (_spawnsOn.Value ? "on" : "off") +
+                             "  (creature spawn points; resources and pins unaffected)");
+                return;
+            }
+
             if (_keyLive.Value.IsDown())
             {
                 _liveOn.Value = !_liveOn.Value;
@@ -391,6 +429,13 @@ namespace FieldNotes
 
             float merge = _mergeRadius.Value;
             spawnersSeen = Discovery.ScanSpawners(_store, me, _discoverRadius.Value, merge, out newSpawners);
+
+            // The other spawner. Fish do not come from AISpawner at all, which is why the stingray
+            // stayed invisible even after being classified.
+            int newFish;
+            Discovery.ScanFishTanks(_store, me, _discoverRadius.Value, merge, out newFish);
+            newSpawners += newFish;
+
             Discovery.ScanItems(_store, me, _discoverRadius.Value, _seeRadius.Value, GameHours(), merge,
                                 out newItems, out restocked, out emptied);
 
@@ -493,7 +538,8 @@ namespace FieldNotes
                     Minimap.Draw(_store, LiveList(), p.transform.position, yaw, Size(),
                                  _minimapRange.Value, _band.Value, _pingHold.Value,
                                  _headingUp.Value, _liveHalo.Value, _iconScale.Value,
-                                 _hideEmpty.Value, RadiusOf, Enabled);
+                                 _hideEmpty.Value, _showNorth.Value, _spawnsOn.Value,
+                                 RadiusOf, Enabled);
                 }
             }
 

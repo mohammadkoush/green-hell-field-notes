@@ -137,7 +137,7 @@ namespace FieldNotes
         internal static void Draw(PoiStore store, List<LiveThing> live, Vector3 me, float yawDegrees,
                                   MinimapSize size, float rangeMetres, float bandMetres,
                                   float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
-                                  float iconScale, bool hideEmpty,
+                                  float iconScale, bool hideEmpty, bool showNorth, bool spawnsOn,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
             float px = PixelsFor(size);
@@ -171,6 +171,11 @@ namespace FieldNotes
             foreach (Poi p in store.All)
             {
                 if (!enabled(p.Kind)) continue;
+
+                // The spawn layer, off as a whole. Creature spawn points only - the larder stays,
+                // because "turn off spawn creatures" was the ask and the resources are the half
+                // worth keeping. Symmetrical with the live layer, which has always had one switch.
+                if (!spawnsOn && IsThreat(p.Kind)) continue;
 
                 Vector3 d = p.Pos - me;
                 d.y = 0f;
@@ -249,13 +254,37 @@ namespace FieldNotes
                 }
             }
 
-            // The player, and which way north is.
+            // The player.
             Dot(centre.x, centre.y, Mathf.Max(5f, px * 0.03f), Color.white);
 
-            float northRad = rot * Mathf.Deg2Rad;
-            Dot(centre.x + Mathf.Sin(northRad) * (half - 8f),
-                centre.y - Mathf.Cos(northRad) * (half - 8f),
-                Mathf.Max(4f, px * 0.022f), new Color(1f, 0.4f, 0.4f, 0.9f));
+            // North.
+            //
+            // This used to be a RED DOT at the rim, and it was reported as an unexplained mark that
+            // was always there. Two things were wrong with it and only one was documentation:
+            //
+            //   1. Red is the PREDATOR colour in this palette (1.00/0.35/0.30 against the marker's
+            //      1.00/0.40/0.40 - indistinguishable at four pixels). On a minimap whose whole
+            //      design is "a threat appears on the ring and then goes quiet", a permanent red
+            //      mark on the ring read as a predator sitting in one direction forever.
+            //   2. A DOT is the vocabulary of a point of interest. North is not a place.
+            //
+            // So it is now a pale TICK outside the ring, off the danger palette entirely, and only
+            // drawn in heading-up mode - with north-up it is always straight up and says nothing.
+            if (showNorth && headingUp)
+            {
+                float northRad = rot * Mathf.Deg2Rad;
+                float sin = Mathf.Sin(northRad), cos = Mathf.Cos(northRad);
+                Color tick = new Color(0.86f, 0.82f, 0.68f, 0.75f);
+                float w = Mathf.Max(2f, px * 0.012f);
+
+                // A short radial stroke rather than a blob: three marks stepping inward read as a
+                // tick pointing at the rim.
+                for (int i = 0; i < 3; i++)
+                {
+                    float r = half - 5f - i * w * 1.6f;
+                    Dot(centre.x + sin * r, centre.y - cos * r, w, tick);
+                }
+            }
 
             GUI.color = edge;
             GUI.Label(new Rect(box.x + 6f, box.yMax - Mathf.Max(20f, px * 0.09f),

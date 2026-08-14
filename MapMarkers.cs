@@ -184,7 +184,8 @@ namespace FieldNotes
         /// Called on a timer, so it must be cheap to say "nothing to do".
         /// </summary>
         internal void Refresh(PoiStore store, List<LiveThing> live, Func<PoiKind, bool> enabled,
-                              bool flipU, bool flipV, bool swapUV, float markerScale, bool hideEmpty)
+                              bool flipU, bool flipV, bool swapUV, float markerScale, bool hideEmpty,
+                              bool spawnsOn)
         {
             string label;
             GameObject page = GetNotepadPage(out label);
@@ -220,6 +221,10 @@ namespace FieldNotes
                 // Same rule as the minimap: an empty tree is not drawn. Hidden, not forgotten.
                 if (hideEmpty && !p.InStock &&
                     (p.Kind == PoiKind.Resource || p.Kind == PoiKind.Camp)) continue;
+
+                // And the same spawn-layer switch, so turning it off clears BOTH surfaces. It is a
+                // layer, not a widget.
+                if (!spawnsOn && Minimap.IsThreat(p.Kind)) continue;
 
                 Vector2 uv;
                 if (!WorldToMapUV(p.Pos, out uv)) { LastNote = "no world dummies on MapTab"; return; }

@@ -57,8 +57,62 @@ namespace FieldNotes
             _cache.Clear();
             float r2 = range * range;
 
-            if (animals) GatherAnimals(me, r2);
+            if (animals) { GatherAnimals(me, r2); GatherFish(me, r2); }
             if (plants)  GatherItems(me, r2);
+        }
+
+        /// <summary>
+        /// Live fish, straight from their tanks.
+        ///
+        /// GatherAnimals reads `AIManager.m_ActiveAIs`, and whether tank-managed fish are registered
+        /// there at all was never established - so rather than find out the hard way a second time,
+        /// this walks `FishTank.s_FishTanks` and asks each tank for its fish directly. Guaranteed
+        /// correct regardless of what the AI manager does or does not know about them.
+        ///
+        /// If a fish DOES also turn up in m_ActiveAIs, nothing breaks: Merged() folds two entries of
+        /// the same species at the same spot into one.
+        /// </summary>
+        private static void GatherFish(Vector3 me, float r2)
+        {
+            try
+            {
+                List<AIs.FishTank> tanks = AIs.FishTank.s_FishTanks;
+                if (tanks == null) return;
+
+                for (int i = 0; i < tanks.Count; i++)
+                {
+                    AIs.FishTank tank = tanks[i];
+                    if (tank == null) continue;
+
+                    // Cheap rejection on the tank before asking it for anything.
+                    if ((tank.transform.position - me).sqrMagnitude > r2 * 4f) continue;
+
+                    int n = 0;
+                    try { n = tank.GetFishesCount(); } catch { continue; }
+
+                    for (int f = 0; f < n; f++)
+                    {
+                        AIs.Fish fish = null;
+                        try { fish = tank.GetFish(f); } catch { }
+                        if (fish == null) continue;
+
+                        Vector3 p = fish.transform.position;
+                        if ((p - me).sqrMagnitude > r2) continue;
+
+                        bool dead = false;
+                        try { dead = fish.IsDead(); } catch { }
+                        if (dead) continue;
+
+                        PoiKind kind; string label;
+                        if (!Discovery.Classify(fish.m_ID, out kind, out label)) continue;
+
+                        LiveThing t = new LiveThing();
+                        t.Kind = kind; t.Label = label; t.Pos = p;
+                        _cache.Add(t);
+                    }
+                }
+            }
+            catch { }
         }
 
         private static void GatherAnimals(Vector3 me, float r2)

@@ -186,6 +186,60 @@ namespace FieldNotes
             return seen;
         }
 
+        /// <summary>
+        /// Fish tanks, which are the OTHER spawner and the reason the stingray never appeared.
+        ///
+        /// Classifying Stingray/Piranha/VampireFish fixed a real bug and was still not enough: fish
+        /// are not placed by AISpawner at all. They come from `AIs.FishTank`, a completely separate
+        /// spawner with its own registry, so the scan above was looking somewhere a fish can never
+        /// be. The species was correct and nothing was calling it.
+        ///
+        /// Verified from IL before writing: `FishTank.s_FishTanks` is a public static List (no scene
+        /// sweep needed at all), `m_Prefabs` is a `List&lt;GameObject&gt;`, and CreateFishes reads the
+        /// species straight off each prefab with `GetComponent&lt;AI&gt;().m_ID`. So a tank knows what it
+        /// holds, which makes it a genuine POI rather than a nameless blob of water.
+        /// </summary>
+        internal static int ScanFishTanks(PoiStore store, Vector3 me, float radius, float merge,
+                                          out int newFound)
+        {
+            newFound = 0;
+            int seen = 0;
+            float r2 = radius * radius;
+
+            try
+            {
+                List<AIs.FishTank> tanks = AIs.FishTank.s_FishTanks;
+                if (tanks == null) return 0;
+
+                for (int i = 0; i < tanks.Count; i++)
+                {
+                    AIs.FishTank t = tanks[i];
+                    if (t == null || t.m_Prefabs == null) continue;
+                    seen++;
+
+                    Vector3 pos = t.transform.position;
+                    if ((pos - me).sqrMagnitude > r2) continue;
+
+                    // A tank can hold more than one species, so every distinct one it can produce
+                    // gets its own POI - "there are piranha here" and "there are stingray here" are
+                    // different things to know.
+                    for (int p = 0; p < t.m_Prefabs.Count; p++)
+                    {
+                        GameObject prefab = t.m_Prefabs[p];
+                        if (prefab == null) continue;
+
+                        AIs.AI ai = prefab.GetComponent<AIs.AI>();
+                        if (ai == null) continue;
+
+                        if (Consider(store, ai.m_ID, pos, merge)) newFound++;
+                    }
+                }
+            }
+            catch { }
+
+            return seen;
+        }
+
         private static bool Consider(PoiStore store, AIs.AI.AIID id, Vector3 pos, float merge)
         {
             PoiKind kind; string label;
