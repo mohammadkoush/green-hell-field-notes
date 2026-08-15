@@ -62,6 +62,8 @@ namespace FieldNotes
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
         private ConfigEntry<bool>  _spawnsOn, _showNorth;
         private ConfigEntry<float> _liveRange, _liveEvery, _iconScale;
+        private ConfigEntry<bool>  _revealOn;
+        private ConfigEntry<float> _revealFraction, _morphSeconds;
 
         // ---- runtime -----------------------------------------------------------------------------
         private float _nextScanAt;
@@ -221,6 +223,25 @@ namespace FieldNotes
                 new ConfigDescription("Icon size as a share of the minimap box.",
                     new AcceptableValueRange<float>(0.02f, 0.3f)));
 
+            // The reveal. A dangerous thing is drawn DIMMED while it is far out and morphs to full
+            // colour when it crosses inside - so the grey is a reward for watching the minimap, and
+            // the red is what you cannot miss. Replaces the halo ping for threats; the ping is still
+            // there behind RevealOn=false for anyone who prefers it.
+            _revealOn = Config.Bind("Reveal", "Enabled", true,
+                "Dangerous things are dimmed at range and turn full colour close in. Off: the old " +
+                "halo ping, where a threat is legible at exactly one distance and then goes quiet.");
+            _revealFraction = Config.Bind("Reveal", "InnerFraction", 0.40f,
+                new ConfigDescription(
+                    "Where the colour turns on, as a share of that category's own detection radius. " +
+                    "0.40 puts a jaguar at 22m and a snake at about 9m, so each keeps its character " +
+                    "off one number.",
+                    new AcceptableValueRange<float>(0.05f, 1f)));
+            _morphSeconds = Config.Bind("Reveal", "MorphSeconds", 1f,
+                new ConfigDescription(
+                    "How long dimmed-to-full takes. The movement is what makes the change read as an " +
+                    "event rather than a redraw you can miss.",
+                    new AcceptableValueRange<float>(0f, 5f)));
+
             Palette.Bind(Config);
 
             Icons.LoadAll(PluginDir());
@@ -260,6 +281,9 @@ namespace FieldNotes
         internal ConfigEntry<float>  CfgRCritter    { get { return _rCritter; } }
         internal ConfigEntry<float>  CfgDiscoverRadius { get { return _discoverRadius; } }
         internal ConfigEntry<float>  CfgSeeRadius   { get { return _seeRadius; } }
+        internal ConfigEntry<bool>   CfgRevealOn    { get { return _revealOn; } }
+        internal ConfigEntry<float>  CfgRevealFraction { get { return _revealFraction; } }
+        internal ConfigEntry<float>  CfgMorphSeconds{ get { return _morphSeconds; } }
 
         // ---- helpers ---------------------------------------------------------------------------
 
@@ -522,6 +546,7 @@ namespace FieldNotes
                                  _minimapRange.Value, _band.Value, _pingHold.Value,
                                  _headingUp.Value, _liveHalo.Value, _iconScale.Value,
                                  _hideEmpty.Value, _showNorth.Value, _spawnsOn.Value,
+                                 _revealOn.Value, _revealFraction.Value, _morphSeconds.Value,
                                  RadiusOf, Enabled);
                 }
             }

@@ -38,6 +38,12 @@ namespace FieldNotes
         public PoiKind Kind;
         public string Label;
         public Vector3 Pos;
+
+        // A STABLE identity for one creature across frames. Needed because the grey-to-red morph
+        // takes a second, and a thing that moves cannot be recognised frame to frame by where it
+        // is - which is the only other handle we would have. Unity's instance id is free and does
+        // not change while the object lives.
+        public int Id;
     }
 
     internal static class Live
@@ -108,6 +114,7 @@ namespace FieldNotes
 
                         LiveThing t = new LiveThing();
                         t.Kind = kind; t.Label = label; t.Pos = p;
+                        try { t.Id = fish.GetInstanceID(); } catch { t.Id = 0; }
                         _cache.Add(t);
                     }
                 }
@@ -154,6 +161,7 @@ namespace FieldNotes
 
                     LiveThing t = new LiveThing();
                     t.Kind = kind; t.Label = label; t.Pos = p;
+                    try { t.Id = ai.GetInstanceID(); } catch { t.Id = 0; }
                     _cache.Add(t);
                 }
             }
@@ -183,6 +191,7 @@ namespace FieldNotes
 
                     LiveThing t = new LiveThing();
                     t.Kind = kind; t.Label = label; t.Pos = p;
+                    try { t.Id = it.GetInstanceID(); } catch { t.Id = 0; }
                     _cache.Add(t);
                 }
             }

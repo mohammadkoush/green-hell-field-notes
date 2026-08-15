@@ -107,6 +107,13 @@ namespace FieldNotes
         {
             Color tint = TintFor(kind);
             tint.a = alpha;
+            MarkTinted(x, y, size, kind, label, tint);
+        }
+
+        /// <summary>As Mark, but the colour has already been decided - used by the reveal.</summary>
+        private static void MarkTinted(float x, float y, float size, PoiKind kind, string label,
+                                       Color tint)
+        {
 
             Texture2D icon = Icons.For(kind, label);
             if (icon == null)
@@ -128,6 +135,29 @@ namespace FieldNotes
         // the triangle is baked once into a small texture and then ROTATED by the GUI matrix. That
         // is also the only way to get a smoothly rotating arrow: drawing it from rectangles would
         // give sixteen visibly different arrows as it turned.
+        // Everything drawn through the reveal this frame, so Reveal.Sweep can forget the rest.
+        private static readonly HashSet<string> s_Seen = new HashSet<string>();
+
+        /// <summary>
+        /// Dimmed at range, full colour inside, and a second to cross between them.
+        ///
+        /// The inner radius is a FRACTION OF THAT CATEGORY'S OWN detection radius, which is what
+        /// keeps a snake intimate and a jaguar roomy off a single number. It is deliberately not one
+        /// shared distance: the categories already differ by a factor of three, and flattening them
+        /// would throw away the difficulty dial the whole mod is tuned on.
+        /// </summary>
+        private static Color RevealColour(PoiKind kind, string label, Vector3 pos, int id, float dist,
+                                          Func<PoiKind, float> radiusOf, float fraction,
+                                          float morphSeconds)
+        {
+            float inner = radiusOf(kind) * Mathf.Clamp01(fraction);
+            string key = Reveal.KeyFor(id, kind, label, pos);
+            s_Seen.Add(key);
+            Color c = Reveal.ColourFor(key, Palette.Of(kind), dist <= inner, morphSeconds);
+            c.a = 1f;
+            return c;
+        }
+
         private static Texture2D s_Arrow;
 
         private static Texture2D ArrowTex()
@@ -223,8 +253,10 @@ namespace FieldNotes
                                   MinimapSize size, float rangeMetres, float bandMetres,
                                   float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
                                   float iconScale, bool hideEmpty, bool showNorth, bool spawnsOn,
+                                  bool revealOn, float revealFraction, float morphSeconds,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
+            s_Seen.Clear();
             float px = PixelsFor(size);
             float pad = Mathf.Max(12f, px * 0.06f);
             Rect box = new Rect(Screen.width - px - pad, pad, px, px);
@@ -270,7 +302,16 @@ namespace FieldNotes
                 // negated cosine.
                 float rad = (Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg + rot) * Mathf.Deg2Rad;
 
-                if (IsThreat(p.Kind))
+                if (IsThreat(p.Kind) && revealOn)
+                {
+                    if (dist * pixelsPerMetre > half - 4f) continue;
+                    float x = centre.x + Mathf.Sin(rad) * dist * pixelsPerMetre;
+                    float y = centre.y - Mathf.Cos(rad) * dist * pixelsPerMetre;
+                    MarkTinted(x, y, iconPx, p.Kind, p.Label,
+                               RevealColour(p.Kind, p.Label, p.Pos, 0, dist,
+                                            radiusOf, revealFraction, morphSeconds));
+                }
+                else if (IsThreat(p.Kind))
                 {
                     float detect = radiusOf(p.Kind);
                     bool inBand = Mathf.Abs(dist - detect) <= bandMetres * 0.5f;
@@ -319,7 +360,16 @@ namespace FieldNotes
                     float dist = d.magnitude;
                     float rad = (Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg + rot) * Mathf.Deg2Rad;
 
-                    if (liveUsesHalo && IsThreat(t.Kind))
+                    if (revealOn && IsThreat(t.Kind))
+                    {
+                        if (dist * pixelsPerMetre > half - 4f) continue;
+                        float x = centre.x + Mathf.Sin(rad) * dist * pixelsPerMetre;
+                        float y = centre.y - Mathf.Cos(rad) * dist * pixelsPerMetre;
+                        MarkTinted(x, y, iconPx * 1.15f, t.Kind, t.Label,
+                                   RevealColour(t.Kind, t.Label, t.Pos, t.Id, dist,
+                                                radiusOf, revealFraction, morphSeconds));
+                    }
+                    else if (liveUsesHalo && IsThreat(t.Kind))
                     {
                         // Same ring discipline as the notebook, for when the plain version turns out
                         // to give too much away.
@@ -357,6 +407,8 @@ namespace FieldNotes
                                      arrowSize, arrowSize), ArrowTex());
             GUI.color = savedColour;
             GUI.matrix = savedMatrix;
+
+            Reveal.Sweep(s_Seen);
 
             // North.
             //

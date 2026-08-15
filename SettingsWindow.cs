@@ -24,7 +24,7 @@ namespace FieldNotes
         internal bool Visible;
 
         // THE ORDER IS THE CONTRACT. Append only.
-        private static readonly string[] Tabs = { "MINIMAP", "COLOURS", "SHOW", "DETECTION", "KEYS" };
+        private static readonly string[] Tabs = { "MINIMAP", "COLOURS", "REVEAL", "SHOW", "DETECTION", "KEYS" };
         private int _tab;
 
         private Rect _rect = new Rect(0f, 0f, 560f, 520f);
@@ -129,8 +129,9 @@ namespace FieldNotes
             {
                 case 0: Minimap_(plugin); break;
                 case 1: Colours(plugin); break;
-                case 2: Show(plugin); break;
-                case 3: Detection(plugin); break;
+                case 2: RevealTab(plugin); break;
+                case 3: Show(plugin); break;
+                case 4: Detection(plugin); break;
                 default: Keys(plugin); break;
             }
             GUILayout.EndScrollView();
@@ -306,6 +307,28 @@ namespace FieldNotes
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
             GUILayout.Space(6f);
+        }
+
+        private void RevealTab(FieldNotesPlugin p)
+        {
+            GUILayout.Label("A dangerous thing is drawn DIMMED while it is far out, and turns full "
+                            + "colour when it crosses inside. The dim version is the same colour "
+                            + "darkened, not a neutral grey, so at range it still hints at what it "
+                            + "is without naming it.", _hint);
+            GUILayout.Space(4f);
+            GUILayout.Label("The point is that the dim one is a reward for watching the minimap. "
+                            + "Stare at the jungle and you get nothing until it goes red.", _hint);
+            GUILayout.Space(8f);
+            Toggle("Use the reveal", p.CfgRevealOn,
+                   "Off: the old halo ping - legible at exactly one distance, then quiet.", _hint);
+            GUILayout.Space(6f);
+            Slider("Colour turns on at", p.CfgRevealFraction, 0.05f, 1f, " x", _hint);
+            GUILayout.Label("      A share of each category's OWN detection radius, so they keep "
+                            + "their character. At 0.40 a jaguar reveals around 22m and a snake "
+                            + "around 9m.", _hint);
+            Slider("Morph time", p.CfgMorphSeconds, 0f, 5f, "s", _hint);
+            GUILayout.Label("      One second to start with. Two if it goes by too fast to notice.",
+                            _hint);
         }
 
         private void Show(FieldNotesPlugin p)
