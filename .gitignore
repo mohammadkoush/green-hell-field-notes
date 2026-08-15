@@ -2,3 +2,6 @@ build/
 mapdump.txt
 fieldnotes-*.txt
 icons-src/sourced/
+
+__pycache__/
+*.pyc

@@ -42,3 +42,22 @@ is not. Originals are kept in `icons-src/sourced/`.
 | tapir | Acrocodia arvernensis | CC BY | Zimices (Julián Bayona) | https://creativecommons.org/licenses/by/3.0/ |
 | toucan | Ramphastos sulfuratus | CC BY | Gabriela Palomo-Munoz | https://creativecommons.org/licenses/by/4.0/ |
 | turtle | Chelonoidis carbonarius | public domain / CC0 | Kai Caspar | https://creativecommons.org/publicdomain/zero/1.0/ |
+
+## Object icons - game-icons.net via Wikimedia Commons
+
+CC BY 3.0. Artists named per icon.
+
+| icon | file | licence | artist |
+|---|---|---|---|
+| animal | Capybara - Caro Asercion - game-icons.svg | CC BY 3.0 | Caro Asercion |
+| anteater | Anteater - Caro Asercion - game-icons.svg | CC BY 3.0 | Caro Asercion |
+| axe | Wood-axe - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
+| birdnest | Nest-eggs - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| bow | Bow-arrow - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| camp | Forest-camp - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| caveman | Brute - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| iron | Ore - Faithtoken - game-icons.svg | CC BY 3.0 | Faithtoken |
+| mushroom | Mushroom - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
+| palmheart | Palm-tree - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| plant | Sprout - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
+| spear | Stone-spear - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
