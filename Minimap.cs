@@ -78,27 +78,120 @@ namespace FieldNotes
         }
 
         /// <summary>
-        /// An icon if there is one for this thing, a coloured dot if there is not. The icon is drawn
-        /// at its own colours with alpha applied, so the silhouettes stay white and the plants stay
-        /// green - the category colour is carried by the dot fallback and by the ring, not by
-        /// tinting art that was cut to be read at a glance.
+        /// The colour an icon is tinted.
+        ///
+        /// RED MEANS DANGER, and now it means only that. Predators, snakes and the venomous critters
+        /// all take the same red rather than the four warm hues the palette offers: at 20 pixels,
+        /// red-orange-violet-yellow reads as noise, while one red reads instantly. Which of them it
+        /// is, the SHAPE already says.
+        ///
+        /// Savages keep orange on purpose. He asked for dangerous ANIMALS in red, and a human being
+        /// is a different kind of problem from a jaguar - one you might avoid rather than outrun.
+        /// Everything harmless stays white, because red only carries meaning while it is rare.
+        ///
+        /// This is also why the compass tick was taken off red two days ago. That was not tidying:
+        /// a permanent red mark on the ring would now be indistinguishable from a predator.
+        /// </summary>
+        private static Color TintFor(PoiKind kind)
+        {
+            switch (kind)
+            {
+                case PoiKind.Predator:
+                case PoiKind.Snake:
+                case PoiKind.Critter:
+                    return new Color(1.00f, 0.26f, 0.22f);
+                case PoiKind.Savage:
+                    return new Color(1.00f, 0.55f, 0.15f);
+                default:
+                    return Color.white;
+            }
+        }
+
+        /// <summary>
+        /// An icon if there is one for this thing, a coloured dot if there is not.
+        ///
+        /// Alpha is applied to the tint WITHOUT washing the hue toward the background - a fading
+        /// ping stays red and gets fainter, rather than turning into a dull brown-grey halfway
+        /// through. That matters because the fade is how a threat leaves the ring, and a threat
+        /// should look like a threat right up to the moment it goes.
         /// </summary>
         private static void Mark(float x, float y, float size, PoiKind kind, string label, float alpha)
         {
+            Color tint = TintFor(kind);
+            tint.a = alpha;
+
             Texture2D icon = Icons.For(kind, label);
             if (icon == null)
             {
-                Color c = ColorOf(kind);
-                c.a = alpha;
-                Dot(x, y, size, c);
+                Dot(x, y, size, tint);
                 return;
             }
 
             Color old = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, alpha);
+            GUI.color = tint;
             GUI.DrawTexture(new Rect(x - size * 0.5f, y - size * 0.5f, size, size), icon,
                             ScaleMode.ScaleToFit, true);
             GUI.color = old;
+        }
+
+        // The player arrow.
+        //
+        // IMGUI cannot fill a polygon - everything on this minimap is a stretched 1x1 texture - so
+        // the triangle is baked once into a small texture and then ROTATED by the GUI matrix. That
+        // is also the only way to get a smoothly rotating arrow: drawing it from rectangles would
+        // give sixteen visibly different arrows as it turned.
+        private static Texture2D s_Arrow;
+
+        private static Texture2D ArrowTex()
+        {
+            if (s_Arrow != null) return s_Arrow;
+
+            const int N = 64;
+            s_Arrow = new Texture2D(N, N, TextureFormat.RGBA32, false);
+            s_Arrow.hideFlags = HideFlags.HideAndDontSave;
+            s_Arrow.wrapMode = TextureWrapMode.Clamp;
+            s_Arrow.filterMode = FilterMode.Bilinear;
+
+            // A kite rather than a plain triangle: the notch in the trailing edge is what makes it
+            // read as pointing rather than as a wedge, at any size.
+            Vector2 tip = new Vector2(0.50f, 0.02f);
+            Vector2 left = new Vector2(0.06f, 0.96f);
+            Vector2 right = new Vector2(0.94f, 0.96f);
+            Vector2 notch = new Vector2(0.50f, 0.70f);
+
+            Color32[] px = new Color32[N * N];
+            for (int y = 0; y < N; y++)
+            {
+                for (int x = 0; x < N; x++)
+                {
+                    // Supersampled 2x2, because a hard-edged arrow at 12 pixels looks like a staircase.
+                    int hits = 0;
+                    for (int sy = 0; sy < 2; sy++)
+                    {
+                        for (int sx = 0; sx < 2; sx++)
+                        {
+                            Vector2 p = new Vector2((x + 0.25f + sx * 0.5f) / N,
+                                                    (y + 0.25f + sy * 0.5f) / N);
+                            if (InTri(p, tip, left, notch) || InTri(p, tip, notch, right)) hits++;
+                        }
+                    }
+                    byte a = (byte)(hits * 255 / 4);
+                    px[y * N + x] = new Color32(255, 255, 255, a);
+                }
+            }
+            s_Arrow.SetPixels32(px);
+            s_Arrow.Apply();
+            return s_Arrow;
+        }
+
+        private static bool InTri(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+        {
+            float d1 = (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+            float d2 = (p.x - c.x) * (b.y - c.y) - (b.x - c.x) * (p.y - c.y);
+            float d3 = (p.x - a.x) * (c.y - a.y) - (c.x - a.x) * (p.y - a.y);
+            bool neg = (d1 < 0f) || (d2 < 0f) || (d3 < 0f);
+            bool pos = (d1 > 0f) || (d2 > 0f) || (d3 > 0f);
+            return !(neg && pos);
         }
 
         private static void Ring(Vector2 c, float radius, Color col, int segments, float dotSize)
@@ -254,8 +347,24 @@ namespace FieldNotes
                 }
             }
 
-            // The player.
-            Dot(centre.x, centre.y, Mathf.Max(5f, px * 0.03f), Color.white);
+            // The player, as an arrow pointing where he is facing.
+            //
+            // In HEADING-UP the whole map is already rotated so that forward is up, which means the
+            // arrow is always up and the rotation is zero - it is the world that turns, not him. In
+            // NORTH-UP nothing rotates, so the arrow itself has to carry the heading. Getting that
+            // backwards would give an arrow that spins while standing still, or one that never
+            // moves while turning on the spot.
+            float arrowAngle = headingUp ? 0f : yawDegrees;
+            float arrowSize = Mathf.Max(11f, px * 0.075f);
+
+            Matrix4x4 savedMatrix = GUI.matrix;
+            Color savedColour = GUI.color;
+            GUIUtility.RotateAroundPivot(arrowAngle, centre);
+            GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(centre.x - arrowSize * 0.5f, centre.y - arrowSize * 0.5f,
+                                     arrowSize, arrowSize), ArrowTex());
+            GUI.color = savedColour;
+            GUI.matrix = savedMatrix;
 
             // North.
             //
