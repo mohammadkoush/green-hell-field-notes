@@ -78,35 +78,21 @@ namespace FieldNotes
         }
 
         /// <summary>
-        /// The colour an icon is tinted.
+        /// The colour an icon is tinted - from the palette, which anyone can change.
         ///
-        /// RED MEANS DANGER, and now it means only that. Predators, snakes and the venomous critters
-        /// all take the same red rather than the four warm hues the palette offers: at 20 pixels,
-        /// red-orange-violet-yellow reads as noise, while one red reads instantly. Which of them it
-        /// is, the SHAPE already says.
+        /// WHAT SHIPS: one red for predators, savages, snakes and critters, and white for everything
+        /// harmless. That is deliberate and it is the fast reading. At twenty pixels a spread of
+        /// warm hues is noise, while a single red is instant - and WHICH danger it is, the shape
+        /// already says. Red only carries meaning while it is rare, which is also why the compass
+        /// tick was taken off red: a permanent red mark on the ring would be indistinguishable from
+        /// a predator.
         ///
-        /// Savages keep orange on purpose. He asked for dangerous ANIMALS in red, and a human being
-        /// is a different kind of problem from a jaguar - one you might avoid rather than outrun.
-        /// Everything harmless stays white, because red only carries meaning while it is rare.
-        ///
-        /// This is also why the compass tick was taken off red two days ago. That was not tidying:
-        /// a permanent red mark on the ring would now be indistinguishable from a predator.
+        /// The settings menu can break that, per category, on purpose. It is his map. The default is
+        /// the opinion; the picker is the escape hatch.
         /// </summary>
         private static Color TintFor(PoiKind kind)
         {
-            switch (kind)
-            {
-                // One red for everything that can kill you, savages included. Red means exactly one
-                // thing on this minimap and nothing else is allowed to use it - that is what makes
-                // it readable at a glance rather than a palette to decode.
-                case PoiKind.Predator:
-                case PoiKind.Snake:
-                case PoiKind.Critter:
-                case PoiKind.Savage:
-                    return new Color(1.00f, 0.26f, 0.22f);
-                default:
-                    return Color.white;
-            }
+            return Palette.Of(kind);
         }
 
         /// <summary>

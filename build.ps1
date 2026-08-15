@@ -32,6 +32,8 @@ $refs = @(
     # IMGUI: the halo minimap is drawn with OnGUI, which owes the game's UI nothing and cannot be
     # broken by it. That independence is why the minimap was the first thing built.
     (Join-Path $managed 'UnityEngine.IMGUIModule.dll')
+    # GUIStyle's TextAnchor and FontStyle live here, not in IMGUIModule - needed by the settings menu
+    (Join-Path $managed 'UnityEngine.TextRenderingModule.dll')
     # PhysicsModule: Collider, stripped off the marker quads before they go near the player's face.
     (Join-Path $managed 'UnityEngine.PhysicsModule.dll')
     # ImageConversionModule: ImageConversion.LoadImage, which turns the icon PNGs on disk into
@@ -103,7 +105,8 @@ if (Test-Path $icons) {
 
 Write-Host "Deployed -> $dest" -ForegroundColor Green
 Write-Host ""
-Write-Host "Keypad3 minimap on/off   Keypad8 size S/M/L   Keypad9 what do I know" -ForegroundColor Yellow
+Write-Host "Keypad1 SETTINGS MENU    Keypad3 minimap on/off   Keypad8 size S/M/L" -ForegroundColor Yellow
+Write-Host "Keypad9 what do I know" -ForegroundColor Yellow
 Write-Host "Keypad4 drop a pin       Keypad0 remove nearest pin" -ForegroundColor Yellow
 Write-Host "Keypad6 live layer       Shift+Keypad6 spawn layer" -ForegroundColor Yellow
 Write-Host "Your notebook: $dest\fieldnotes-<save>.txt" -ForegroundColor Yellow

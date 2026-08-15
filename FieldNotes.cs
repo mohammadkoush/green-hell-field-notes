@@ -43,10 +43,11 @@ namespace FieldNotes
         internal static FieldNotesPlugin s_Self;
 
         private readonly PoiStore _store = new PoiStore();
+        private readonly SettingsWindow _settings = new SettingsWindow();
 
         // ---- config ------------------------------------------------------------------------------
         private ConfigEntry<KeyboardShortcut> _keyMinimap, _keySize, _keyPin, _keyUnpin,
-                                              _keyReport, _keyLive, _keySpawns;
+                                              _keyReport, _keyLive, _keySpawns, _keySettings;
 
         private ConfigEntry<bool>  _minimapOn;
         private ConfigEntry<string> _minimapSize;
@@ -83,6 +84,8 @@ namespace FieldNotes
                 "Pin your own marker here.");
             _keyUnpin    = Config.Bind("Keys", "RemoveNearestPin", new KeyboardShortcut(KeyCode.Keypad0),
                 "Remove your nearest own pin. Never touches anything you discovered.");
+            _keySettings = Config.Bind("Keys", "OpenSettings", new KeyboardShortcut(KeyCode.Keypad1),
+                "Open the settings menu. Keypad1 came free when the notepad map was cut.");
             _keyReport   = Config.Bind("Keys", "Report", new KeyboardShortcut(KeyCode.Keypad9),
                 "What do I know? A quick count on screen.");
             // Keypad6, not 5 or 7: Keypad5 belongs to another mod and Keypad7 to Pickup Doctor.
@@ -218,6 +221,8 @@ namespace FieldNotes
                 new ConfigDescription("Icon size as a share of the minimap box.",
                     new AcceptableValueRange<float>(0.02f, 0.3f)));
 
+            Palette.Bind(Config);
+
             Icons.LoadAll(PluginDir());
             Logger.LogInfo("icons: " + Icons.Loaded + " loaded from " + Icons.Dir +
                            (Icons.LastError.Length > 0 ? "  (" + Icons.LastError + ")" : ""));
@@ -225,6 +230,36 @@ namespace FieldNotes
             Logger.LogInfo(Name + " " + Version + " loaded. Keypad3 minimap, Keypad8 size, " +
                            "Keypad4 pin, Keypad0 unpin, Keypad9 report, Keypad6 live layer.");
         }
+
+        // ---- what the settings window may touch --------------------------------------------------
+        // Handles to the ConfigEntry objects rather than their values: the window writes into
+        // BepInEx's own config, so saving, ranges and the .cfg file all keep working untouched.
+        internal ConfigEntry<bool>   CfgMinimapOn   { get { return _minimapOn; } }
+        internal ConfigEntry<string> CfgMinimapSize { get { return _minimapSize; } }
+        internal ConfigEntry<float>  CfgIconScale   { get { return _iconScale; } }
+        internal ConfigEntry<float>  CfgRange       { get { return _minimapRange; } }
+        internal ConfigEntry<float>  CfgBand        { get { return _band; } }
+        internal ConfigEntry<float>  CfgPingHold    { get { return _pingHold; } }
+        internal ConfigEntry<bool>   CfgHeadingUp   { get { return _headingUp; } }
+        internal ConfigEntry<bool>   CfgShowNorth   { get { return _showNorth; } }
+        internal ConfigEntry<bool>   CfgShowPredator{ get { return _showPredator; } }
+        internal ConfigEntry<bool>   CfgShowSavage  { get { return _showSavage; } }
+        internal ConfigEntry<bool>   CfgShowSnake   { get { return _showSnake; } }
+        internal ConfigEntry<bool>   CfgShowCritter { get { return _showCritter; } }
+        internal ConfigEntry<bool>   CfgShowFood    { get { return _showFood; } }
+        internal ConfigEntry<bool>   CfgShowResource{ get { return _showResource; } }
+        internal ConfigEntry<bool>   CfgShowCamp    { get { return _showCamp; } }
+        internal ConfigEntry<bool>   CfgShowManual  { get { return _showManual; } }
+        internal ConfigEntry<bool>   CfgLiveOn      { get { return _liveOn; } }
+        internal ConfigEntry<bool>   CfgLiveHalo    { get { return _liveHalo; } }
+        internal ConfigEntry<bool>   CfgSpawnsOn    { get { return _spawnsOn; } }
+        internal ConfigEntry<bool>   CfgHideEmpty   { get { return _hideEmpty; } }
+        internal ConfigEntry<float>  CfgRPredator   { get { return _rPredator; } }
+        internal ConfigEntry<float>  CfgRSavage     { get { return _rSavage; } }
+        internal ConfigEntry<float>  CfgRSnake      { get { return _rSnake; } }
+        internal ConfigEntry<float>  CfgRCritter    { get { return _rCritter; } }
+        internal ConfigEntry<float>  CfgDiscoverRadius { get { return _discoverRadius; } }
+        internal ConfigEntry<float>  CfgSeeRadius   { get { return _seeRadius; } }
 
         // ---- helpers ---------------------------------------------------------------------------
 
@@ -372,6 +407,7 @@ namespace FieldNotes
                              (_liveOn.Value ? "  (" + Live.Count + " things nearby)" : ""));
             }
 
+            if (_keySettings.Value.IsDown()) _settings.Toggle();
             if (_keyPin.Value.IsDown()) DropPin();
             if (_keyUnpin.Value.IsDown()) RemoveNearestPin();
             if (_keyReport.Value.IsDown()) Report();
@@ -489,6 +525,8 @@ namespace FieldNotes
                                  RadiusOf, Enabled);
                 }
             }
+
+            _settings.Draw(this);
 
             if (_screen.Count > 0 && Time.realtimeSinceStartup <= _screenUntil)
             {
