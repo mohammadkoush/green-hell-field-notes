@@ -9,8 +9,6 @@ is not. Originals are kept in `icons-src/sourced/`.
 | icon | taxon, licence, contributor, url |
 |---|---|
 | agouti | Dasyprocta leporina | public domain / CC0 | Margot Michaud | https://creativecommons.org/publicdomain/zero/1.0/ |
-| animal | Odocoileus virginianus | public domain / CC0 | Abby Weber | https://creativecommons.org/publicdomain/zero/1.0/ |
-| anteater | Cyclopes didactylus | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | anthill | Martialis heureka | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/zero/1.0/ |
 | armadillo | Dasypus novemcinctus | public domain / CC0 | Steven Traver | https://creativecommons.org/publicdomain/zero/1.0/ |
 | banana | Ensete ventricosum | public domain / CC0 | JBORRELL | https://creativecommons.org/publicdomain/zero/1.0/ |
@@ -18,7 +16,6 @@ is not. Originals are kept in `icons-src/sourced/`.
 | bug | Cetonia aurata | CC BY | Pascal Abel | https://creativecommons.org/licenses/by/4.0/ |
 | capybara | Hydrochoerus hydrochaeris | public domain / CC0 | Skye McDavid | https://creativecommons.org/publicdomain/zero/1.0/ |
 | cassava | Manihot esculenta | public domain / CC0 | guarneri92 | https://creativecommons.org/publicdomain/zero/1.0/ |
-| caveman | Lufengpithecus wushanensis | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/zero/1.0/ |
 | coconut | Cocos nucifera | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | crab | Cancer bellianus | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | fish | Knodus | CC BY | Melo-Ortiz Omar Edu. | https://creativecommons.org/licenses/by/4.0/ |
@@ -28,12 +25,9 @@ is not. Originals are kept in `icons-src/sourced/`.
 | molineria | Vaccinium erythrocarpum | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | monkey | Ateles | public domain / CC0 | Steven Traver | https://creativecommons.org/publicdomain/zero/1.0/ |
 | mouse | Mus musculus | CC BY | Soledad Miranda-Rottmann | https://creativecommons.org/licenses/by/3.0/ |
-| mushroom | Armillaria mellea | public domain / CC0 | Guillaume Dera | https://creativecommons.org/publicdomain/zero/1.0/ |
-| palmheart | Sabal palmetto | public domain / CC0 | Caleb M. Gordon | https://creativecommons.org/publicdomain/zero/1.0/ |
 | papaya | Carica papaya | CC BY | Tree of Life App | https://creativecommons.org/licenses/by/4.0/ |
 | parrot | Nestor notabilis | public domain / CC0 | Ferran Sayol | https://creativecommons.org/publicdomain/zero/1.0/ |
 | peccary | Tayassu pecari | CC BY | Gabriela Palomo-Munoz | https://creativecommons.org/licenses/by/4.0/ |
-| plant | Hedyosmum cumbalense | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | predator | Panthera onca | CC BY | Manabu Sakamoto | https://creativecommons.org/licenses/by/3.0/ |
 | scorpion | Protoischnurus axelrodor | public domain / CC0 | Dean Schnabel | https://creativecommons.org/publicdomain/zero/1.0/ |
 | snake | Boa constrictor | public domain / CC0 | Becky Barnes | https://creativecommons.org/publicdomain/zero/1.0/ |
@@ -55,7 +49,7 @@ CC BY 3.0. Artists named per icon.
 | birdnest | Nest-eggs - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | bow | Bow-arrow - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | camp | Forest-camp - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
-| caveman | Brute - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| caveman | Caveman - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | iron | Ore - Faithtoken - game-icons.svg | CC BY 3.0 | Faithtoken |
 | mushroom | Mushroom - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
 | palmheart | Palm-tree - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |

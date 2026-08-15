@@ -193,27 +193,6 @@ namespace FieldNotes
         internal static int ResourceTableSize { get { BuildTables(); return Resources.Count; } }
         internal static int CampTableSize     { get { BuildTables(); return CampGear.Count; } }
 
-        /// <summary>
-        /// Does this belong on the NOTEPAD MAP, as opposed to the minimap?
-        ///
-        /// The two surfaces now answer different questions, which is his call and the right one.
-        /// The minimap is about what is around you NOW - every animal, every plant, the halo, the
-        /// live layer. The map is about where you would walk to on purpose: iron, an anthill, a
-        /// beehive. Rare, fixed, and worth a journey.
-        ///
-        /// Putting everything on both was what made the map a wall of coconuts, and a map that
-        /// shows everything shows nothing.
-        /// </summary>
-        internal static bool IsMapWorthy(Poi p)
-        {
-            if (p == null) return false;
-            // His own pins are always map-worthy: if he took the trouble to mark a spot, it is by
-            // definition somewhere he means to go back to.
-            if (p.Kind == PoiKind.Manual) return true;
-            if (p.Label == null) return false;
-            return p.Label == "Iron" || p.Label == "Anthill" || p.Label == "Honey";
-        }
-
         /// <summary>One item, classified. Shared with the live layer so both surfaces agree on what
         /// a thing is and what it is called.</summary>
         internal static bool LookUpItem(Enums.ItemID id, out PoiKind kind, out string label)

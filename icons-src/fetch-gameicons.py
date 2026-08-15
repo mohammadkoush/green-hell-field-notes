@@ -49,9 +49,10 @@ WANTED = {
     "iron":      "File:Ore - Faithtoken - game-icons.svg",
     "birdnest":  "File:Nest-eggs - Delapouite - game-icons.svg",
     "mushroom":  "File:Mushroom - Lorc - game-icons.svg",
-    # An unarmed figure ON PURPOSE. The obvious "Caveman" icon carries a spear, and this icon exists
-    # precisely to mean "a savage holding nothing" - it would have collided with the spearman.
-    "caveman":   "File:Brute - Delapouite - game-icons.svg",
+    # His call, made knowingly: this icon is throwing a spear even though it marks the savage holding
+    # nothing. I had swapped it for an unarmed Brute to avoid reading as the spearman; he looked at
+    # both and picked the caveman anyway.
+    "caveman":   "File:Caveman - Delapouite - game-icons.svg",
     "plant":     "File:Sprout - Lorc - game-icons.svg",
     # A palm TREE. "Palm - Lorc" is a hand, which is what the word means everywhere except here.
     "palmheart": "File:Palm-tree - Delapouite - game-icons.svg",
@@ -68,7 +69,7 @@ FALLBACKS = {
     "spear":     ["File:Barbed-spear - Lorc - game-icons.svg"],
     "camp":      ["File:Desert-camp - Delapouite - game-icons.svg"],
     "birdnest":  ["File:Nest-birds - Delapouite - game-icons.svg"],
-    "caveman":   ["File:Barbarian - Delapouite - game-icons.svg"],
+    "caveman":   ["File:Brute - Delapouite - game-icons.svg", "File:Barbarian - Delapouite - game-icons.svg"],
     "palmheart": ["File:Coconuts - Delapouite - game-icons.svg"],
     "plant":     ["File:Ground-sprout - Lorc - game-icons.svg", "File:Plant-roots - Delapouite - game-icons.svg"],
 }

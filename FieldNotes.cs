@@ -43,11 +43,10 @@ namespace FieldNotes
         internal static FieldNotesPlugin s_Self;
 
         private readonly PoiStore _store = new PoiStore();
-        private readonly MapMarkers _markers = new MapMarkers();
 
         // ---- config ------------------------------------------------------------------------------
         private ConfigEntry<KeyboardShortcut> _keyMinimap, _keySize, _keyPin, _keyUnpin,
-                                              _keyMapMarks, _keyDump, _keyReport, _keyLive, _keySpawns;
+                                              _keyReport, _keyLive, _keySpawns;
 
         private ConfigEntry<bool>  _minimapOn;
         private ConfigEntry<string> _minimapSize;
@@ -62,13 +61,9 @@ namespace FieldNotes
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
         private ConfigEntry<bool>  _spawnsOn, _showNorth;
         private ConfigEntry<float> _liveRange, _liveEvery, _iconScale;
-        private ConfigEntry<bool>  _mapMarksOn;
-        private ConfigEntry<bool>  _flipU, _flipV, _swapUV;
-        private ConfigEntry<float> _markerScale;
 
         // ---- runtime -----------------------------------------------------------------------------
         private float _nextScanAt;
-        private float _nextMarkerRefreshAt;
         private string _boundSave = "";
         private readonly List<string> _screen = new List<string>();
         private float _screenUntil;
@@ -88,10 +83,6 @@ namespace FieldNotes
                 "Pin your own marker here.");
             _keyUnpin    = Config.Bind("Keys", "RemoveNearestPin", new KeyboardShortcut(KeyCode.Keypad0),
                 "Remove your nearest own pin. Never touches anything you discovered.");
-            _keyMapMarks = Config.Bind("Keys", "ToggleMapMarkers", new KeyboardShortcut(KeyCode.Keypad2),
-                "Draw your notebook onto the game's own map.");
-            _keyDump     = Config.Bind("Keys", "DumpMapDiagnostics", new KeyboardShortcut(KeyCode.Keypad1),
-                "Write map hierarchy and world->map maths to mapdump.txt. For when markers misbehave.");
             _keyReport   = Config.Bind("Keys", "Report", new KeyboardShortcut(KeyCode.Keypad9),
                 "What do I know? A quick count on screen.");
             // Keypad6, not 5 or 7: Keypad5 belongs to another mod and Keypad7 to Pickup Doctor.
@@ -220,32 +211,19 @@ namespace FieldNotes
                 "Draw the north tick on the minimap rim. Only ever drawn in heading-up mode - with " +
                 "north-up it would always be straight up and would say nothing.");
 
-            // Halved from 0.115 on request. Note this is a LINEAR scale, so halving it makes each
-            // icon a quarter of the area - if that turns out to be too small, 0.08 is the
-            // half-visual-weight value rather than 0.058.
-            _iconScale = Config.Bind("Minimap", "IconScale", 0.058f,
+            // 0.08, which is what actually halves the apparent SIZE. The first attempt halved the
+            // number to 0.058, and because this is a linear scale that quartered the area and read
+            // as too small in game.
+            _iconScale = Config.Bind("Minimap", "IconScale", 0.08f,
                 new ConfigDescription("Icon size as a share of the minimap box.",
                     new AcceptableValueRange<float>(0.02f, 0.3f)));
-
-            _mapMarksOn = Config.Bind("Map", "DrawOnGameMap", true,
-                "Draw the notebook onto the game's own map pages.");
-            _flipU = Config.Bind("Map", "FlipU", false,
-                "If markers come out mirrored left-to-right, turn this on. The world->map maths is " +
-                "derived from the game's own GPS code, but which way the page's axes run is not " +
-                "written down anywhere, so it is a toggle rather than a guess.");
-            _flipV = Config.Bind("Map", "FlipV", false, "As FlipU, top-to-bottom.");
-            _swapUV = Config.Bind("Map", "SwapUV", false, "If markers come out rotated 90 degrees.");
-            _markerScale = Config.Bind("Map", "MarkerScale", 0.022f,
-                new ConfigDescription("Marker size as a share of the page.",
-                    new AcceptableValueRange<float>(0.004f, 0.12f)));
 
             Icons.LoadAll(PluginDir());
             Logger.LogInfo("icons: " + Icons.Loaded + " loaded from " + Icons.Dir +
                            (Icons.LastError.Length > 0 ? "  (" + Icons.LastError + ")" : ""));
 
             Logger.LogInfo(Name + " " + Version + " loaded. Keypad3 minimap, Keypad8 size, " +
-                           "Keypad4 pin, Keypad2 map markers, Keypad9 report, Keypad1 diagnostics, " +
-                           "Keypad6 live layer.");
+                           "Keypad4 pin, Keypad0 unpin, Keypad9 report, Keypad6 live layer.");
         }
 
         // ---- helpers ---------------------------------------------------------------------------
@@ -336,7 +314,6 @@ namespace FieldNotes
                     int folded = _store.Compact(_mergeRadius.Value);
                     if (folded > 0) _store.Save();
 
-                    _markers.Clear();
                     Logger.LogInfo("notebook: " + _store.Count + " entries from " + _store.Path_ +
                                    (folded > 0 ? "  (" + folded + " duplicate(s) merged)" : ""));
                 }
@@ -351,13 +328,6 @@ namespace FieldNotes
                     Live.Refresh(p.transform.position, _liveRange.Value, _liveAnimals.Value,
                                  _livePlants.Value, _liveEvery.Value);
 
-                if (_mapMarksOn.Value && Time.time >= _nextMarkerRefreshAt)
-                {
-                    _nextMarkerRefreshAt = Time.time + 1f;
-                    _markers.Refresh(_store, LiveList(), Enabled, _flipU.Value, _flipV.Value,
-                                     _swapUV.Value, _markerScale.Value, _hideEmpty.Value,
-                                     _spawnsOn.Value);
-                }
 
                 _store.SaveIfDirty(5f);
             }
@@ -385,23 +355,11 @@ namespace FieldNotes
                              Screen.height + "px tall screen)");
             }
 
-            if (_keyMapMarks.Value.IsDown())
-            {
-                _mapMarksOn.Value = !_mapMarksOn.Value;
-                if (!_mapMarksOn.Value) _markers.Clear(); else _nextMarkerRefreshAt = 0f;
-                Begin(); Say("map markers " + (_mapMarksOn.Value ? "on" : "off"));
-                Say(_markers.LastNote.Length > 0 ? _markers.LastNote
-                                                 : "no report yet - open the notepad map and press again");
-                Say("the map carries iron, anthills, beehives and your own pins. Everything else " +
-                    "is minimap only.");
-            }
-
             // Checked BEFORE the live key: Shift+Keypad6 also satisfies plain Keypad6, so without
             // this order one press would flip both layers at once.
             if (_keySpawns.Value.IsDown())
             {
                 _spawnsOn.Value = !_spawnsOn.Value;
-                _nextMarkerRefreshAt = 0f;
                 Begin(); Say("spawn layer " + (_spawnsOn.Value ? "on" : "off") +
                              "  (creature spawn points; resources and pins unaffected)");
                 return;
@@ -410,7 +368,6 @@ namespace FieldNotes
             if (_keyLive.Value.IsDown())
             {
                 _liveOn.Value = !_liveOn.Value;
-                _nextMarkerRefreshAt = 0f;
                 Begin(); Say("live layer " + (_liveOn.Value ? "on" : "off") +
                              (_liveOn.Value ? "  (" + Live.Count + " things nearby)" : ""));
             }
@@ -418,19 +375,6 @@ namespace FieldNotes
             if (_keyPin.Value.IsDown()) DropPin();
             if (_keyUnpin.Value.IsDown()) RemoveNearestPin();
             if (_keyReport.Value.IsDown()) Report();
-
-            if (_keyDump.Value.IsDown())
-            {
-                Begin();
-                try
-                {
-                    string path = Path.Combine(PluginDir(), "mapdump.txt");
-                    File.WriteAllText(path, MapMarkers.DumpHierarchy());
-                    Say("wrote " + path);
-                    if (_markers.LastNote.Length > 0) Say(_markers.LastNote);
-                }
-                catch (Exception ex) { Say("dump failed: " + ex.Message); }
-            }
         }
 
         private void Scan(Vector3 me)
@@ -456,11 +400,6 @@ namespace FieldNotes
                 if (newItems > 0)    Say("noted " + newItems + " resource(s)");
                 Say("notebook: " + _store.Count + " places");
                 _store.Save();
-                _nextMarkerRefreshAt = 0f;
-            }
-            else if (restocked > 0 || emptied > 0)
-            {
-                _nextMarkerRefreshAt = 0f;
             }
         }
 
@@ -478,7 +417,6 @@ namespace FieldNotes
             // No merging on his own pins: if he deliberately drops two close together, he meant to.
             if (_store.Discover(pin)) { Say("pinned. " + _store.CountOf(PoiKind.Manual) + " of your own."); _store.Save(); }
             else Say("already pinned here.");
-            _nextMarkerRefreshAt = 0f;
         }
 
         /// <summary>
@@ -508,7 +446,6 @@ namespace FieldNotes
             _store.Clear();
             for (int i = 0; i < keep.Count; i++) _store.Discover(keep[i]);
             _store.Save();
-            _nextMarkerRefreshAt = 0f;
             Say("pin removed.");
         }
 
@@ -527,7 +464,6 @@ namespace FieldNotes
             Say("  live now: " + (_liveOn.Value ? Live.Count + " nearby" : "layer off") +
                 "   icons: " + Icons.Loaded);
             Say("  notebook: " + _store.Path_);
-            if (_markers.LastNote.Length > 0) Say("  map: " + _markers.LastNote);
         }
 
         private void OnDestroy()

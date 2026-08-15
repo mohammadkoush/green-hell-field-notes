@@ -2,10 +2,7 @@
 
 A Green Hell map you have to earn. Nothing is on it until you've been there.
 
-## Two surfaces, one notebook
-
-**The game's own map** gets everything you've found — permanently, by category, with the stock of
-each larder point as of the last time you stood close enough to see it.
+## One surface, one notebook
 
 **The minimap is a halo, not a map.** A threat is legible at exactly one distance — its own
 detection radius — and then goes quiet. Walk toward a snake and its mark slides onto the ring, sits
@@ -35,8 +32,6 @@ spoil — you already went there.
 | **Keypad 9** | What do I know? A quick count |
 | **Keypad 4** | Drop your own pin here |
 | **Keypad 0** | Remove your nearest pin (never touches anything you discovered) |
-| **Keypad 2** | Markers on the game's own map, on / off |
-| **Keypad 1** | Map diagnostics → `mapdump.txt` |
 
 Sizes are a **share of screen height** — 16% / 22% / 30% — not pixel counts. A fixed 220px box is a
 postage stamp on a 4K panel and half the screen on a laptop.
@@ -71,10 +66,12 @@ timer. There is no fixed point, so nothing was invented. The category and its ri
 feeds them yet. Making it mean something (the camps they come from? a history of where one attacked
 you?) is a design decision, not a lookup.
 
-**Map marker orientation.** The world→map maths is derived from the game's own
-`Player.GetGPSCoordinates`, but which way the map page's own axes run isn't written down anywhere.
-If markers come out mirrored or rotated, `[Map] FlipU / FlipV / SwapUV` fix it without a rebuild —
-and **Keypad 1** writes a diagnostic dump that says where you are in map space.
+**The notepad map was cut.** Drawing onto the game's own map pages was built, and across six
+sessions it never rendered one visible thing. The world→map maths was sound — derived from
+`Player.GetGPSCoordinates` — but the page elements are all `SetActive(false)` and nothing that got
+parented to them ever appeared. Rather than keep paying for blind fixes on a surface that had never
+once worked, the whole path came out: `MapMarkers.cs`, the `[Map]` config section, and Keypads 1
+and 2. Everything lives on the minimap now.
 
 ## Build
 

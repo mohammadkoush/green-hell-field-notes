@@ -42,6 +42,9 @@ SIZE = 64
 # icon name -> taxa to try, best first. Scientific names, because PhyloPic is taxonomic: asking for
 # "capybara" finds nothing and asking for Hydrochoerus finds the animal.
 TAXA = {
+    # anteater, animal, caveman, mushroom, palmheart and plant deliberately do NOT live here
+    # any more - they come from game-icons via fetch-gameicons.py. Two scripts owning one
+    # filename is the double-write bug that has landed twice; the sets must stay disjoint.
     "tapir":     ["Tapirus", "Tapiridae"],
     "capybara":  ["Hydrochoerus", "Caviidae"],
     "peccary":   ["Tayassu", "Pecari", "Tayassuidae"],
@@ -49,7 +52,6 @@ TAXA = {
     "armadillo": ["Dasypus", "Cingulata"],
     "turtle":    ["Chelonoidis", "Testudinidae", "Testudines"],
     "mouse":     ["Mus", "Muridae"],
-    "anteater":  ["Myrmecophaga", "Tamandua", "Vermilingua"],
     "monkey":    ["Ateles", "Cebus", "Platyrrhini"],
     "lizard":    ["Iguana", "Iguanidae"],
     "crab":      ["Brachyura", "Cancer"],
@@ -64,17 +66,12 @@ TAXA = {
     "scorpion":  ["Scorpiones"],
     "predator":  ["Panthera onca", "Panthera", "Felidae"],
     "stingray":  ["Potamotrygon", "Myliobatiformes", "Batoidea"],
-    "animal":    ["Mazama", "Cervidae"],
-    "caveman":   ["Homo", "Hominidae"],
 
     "coconut":   ["Cocos nucifera", "Cocos"],
     "banana":    ["Musa", "Musaceae"],
     "papaya":    ["Carica papaya", "Carica"],
     "cassava":   ["Manihot esculenta", "Manihot"],
-    "palmheart": ["Arecaceae", "Euterpe"],
     "molineria": ["Rubus", "Vaccinium"],
-    "mushroom":  ["Agaricus", "Basidiomycota"],
-    "plant":     ["Magnoliopsida", "Tracheophyta"],
 
     # The three the notepad map carries. Ant and bee stand in for anthill and beehive - the
     # occupant is far more recognisable at icon size than the structure, and nobody mistakes an

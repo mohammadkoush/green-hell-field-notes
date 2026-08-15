@@ -105,5 +105,5 @@ Write-Host "Deployed -> $dest" -ForegroundColor Green
 Write-Host ""
 Write-Host "Keypad3 minimap on/off   Keypad8 size S/M/L   Keypad9 what do I know" -ForegroundColor Yellow
 Write-Host "Keypad4 drop a pin       Keypad0 remove nearest pin" -ForegroundColor Yellow
-Write-Host "Keypad2 markers on the game map      Keypad1 map diagnostics -> mapdump.txt" -ForegroundColor Yellow
+Write-Host "Keypad6 live layer       Shift+Keypad6 spawn layer" -ForegroundColor Yellow
 Write-Host "Your notebook: $dest\fieldnotes-<save>.txt" -ForegroundColor Yellow

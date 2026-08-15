@@ -96,12 +96,14 @@ namespace FieldNotes
         {
             switch (kind)
             {
+                // One red for everything that can kill you, savages included. Red means exactly one
+                // thing on this minimap and nothing else is allowed to use it - that is what makes
+                // it readable at a glance rather than a palette to decode.
                 case PoiKind.Predator:
                 case PoiKind.Snake:
                 case PoiKind.Critter:
-                    return new Color(1.00f, 0.26f, 0.22f);
                 case PoiKind.Savage:
-                    return new Color(1.00f, 0.55f, 0.15f);
+                    return new Color(1.00f, 0.26f, 0.22f);
                 default:
                     return Color.white;
             }
@@ -154,10 +156,14 @@ namespace FieldNotes
 
             // A kite rather than a plain triangle: the notch in the trailing edge is what makes it
             // read as pointing rather than as a wedge, at any size.
-            Vector2 tip = new Vector2(0.50f, 0.02f);
-            Vector2 left = new Vector2(0.06f, 0.96f);
-            Vector2 right = new Vector2(0.94f, 0.96f);
-            Vector2 notch = new Vector2(0.50f, 0.70f);
+            //
+            // Y IS UP HERE, NOT DOWN. SetPixels32 puts row 0 at the BOTTOM of the texture, unlike
+            // every screen coordinate in this file. Authoring the tip near y=0 - the obvious thing -
+            // bakes it at the bottom and the arrow points dead backwards.
+            Vector2 tip = new Vector2(0.50f, 0.98f);
+            Vector2 left = new Vector2(0.06f, 0.04f);
+            Vector2 right = new Vector2(0.94f, 0.04f);
+            Vector2 notch = new Vector2(0.50f, 0.30f);
 
             Color32[] px = new Color32[N * N];
             for (int y = 0; y < N; y++)
