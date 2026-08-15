@@ -220,6 +220,19 @@ $shapes['crab'] = {
     Line $g $w 74 108 34 68 13;  Poly $g $w @((P 40 78), (P 8 46), (P 34 40), (P 52 62))
     Line $g $w 182 108 222 68 13; Poly $g $w @((P 216 78), (P 248 46), (P 222 40), (P 204 62))
 }
+$shapes['iron'] = {
+    # No organism to source, so this one stays drawn - and a mineral is geometry, which is the kind
+    # of thing that came out fine. An angular chunk with facet notches: not a smooth pebble, not a
+    # crystal, just something you would swing a pick at.
+    param($g,$w)
+    Poly $g $w @(
+        (P 34 150), (P 62 78), (P 128 44), (P 200 66),
+        (P 232 130), (P 210 200), (P 132 226), (P 56 204)
+    )
+    Punch $g @((P 120 44),(P 134 48),(P 96 132),(P 84 122))
+    Punch $g @((P 200 74),(P 210 86),(P 140 138),(P 130 126))
+    Punch $g @((P 128 140),(P 140 148),(P 116 224),(P 102 220))
+}
 $shapes['animal'] = {
     # The honest fallback for any four-legged thing I cannot draw recognisably. It is the same rule
     # that killed the panther-for-savages icon: a WRONG icon is worse than a vague one, because a
@@ -427,8 +440,19 @@ $shapes['plant'] = {
 }
 
 # ---------------------------------------------------------------------------------------------
-Write-Host "Drawing $($shapes.Count) icons" -ForegroundColor Cyan
-foreach ($name in ($shapes.Keys | Sort-Object)) {
+# OWNERSHIP, so the order the scripts run in stops mattering.
+#
+# This has now bitten twice: two scripts writing the same filename, whichever ran last silently
+# winning, and a set of icons that looked fixed and was not. The fix is not discipline about run
+# order - it is that each script emits a DISJOINT set. PhyloPic owns every organism; this script
+# owns only things that are not alive and therefore have no silhouette to source.
+#
+# The rest of $shapes is kept below, unreferenced, so a future attempt starts from the last one.
+$OWNED = @('iron', 'bow', 'spear', 'axe')
+
+Write-Host "Drawing $($OWNED.Count) icons (the ones no organism database can supply)" -ForegroundColor Cyan
+foreach ($name in $OWNED) {
+    if (-not $shapes.ContainsKey($name)) { Write-Host "  $name : no shape defined" -ForegroundColor Red; continue }
     New-DrawnIcon -OutName ($name + '.png') -Body $shapes[$name] -OutDir $OutDir -Size $Size
 }
 Write-Host ""

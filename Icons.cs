@@ -93,6 +93,11 @@ namespace FieldNotes
             // inside the name is more robust than listing every AIID.
             if (k.Length > 0)
             {
+                // The three the notepad map carries.
+                if (k.Contains("iron"))      return Get("iron");
+                if (k.Contains("anthill") || k.Contains("ant")) return Get("anthill");
+                if (k.Contains("honey") || k.Contains("beehive")) return Get("honey");
+
                 if (k.Contains("stingray"))  return Get("stingray");
                 if (k.Contains("piranha") || k.Contains("vampirefish")) return Get("stingray");
 

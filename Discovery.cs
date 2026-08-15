@@ -149,6 +149,14 @@ namespace FieldNotes
             Add(Resources, "Honeycomb", "Honeycomb");
             Add(Resources, "Bird nest", "Bird_Nest", "Bird_Nest_ToHoldHarvest");
 
+            // THE MAP-WORTHY THREE. These are the only things the notepad map draws, and they earn
+            // it by being rare, fixed and worth planning a trip around - which is what a map is for.
+            // A coconut palm is worth knowing about when you are standing near one; an iron deposit
+            // is worth knowing about from the other side of the island.
+            Add(Resources, "Iron",    "iron_ore_stone", "iron_ore_melted");
+            Add(Resources, "Anthill", "Anthill", "Anthill_powder");
+            Add(Resources, "Honey",   "Beehive", "Honeycomb");
+
             // "Camp gear" read as the useful hard-to-find kit lying around the island, not his own
             // built camp - flagged as ambiguous when he said it, and this is the reading that earns
             // an icon. Easy to change: it is one table.
@@ -184,6 +192,27 @@ namespace FieldNotes
 
         internal static int ResourceTableSize { get { BuildTables(); return Resources.Count; } }
         internal static int CampTableSize     { get { BuildTables(); return CampGear.Count; } }
+
+        /// <summary>
+        /// Does this belong on the NOTEPAD MAP, as opposed to the minimap?
+        ///
+        /// The two surfaces now answer different questions, which is his call and the right one.
+        /// The minimap is about what is around you NOW - every animal, every plant, the halo, the
+        /// live layer. The map is about where you would walk to on purpose: iron, an anthill, a
+        /// beehive. Rare, fixed, and worth a journey.
+        ///
+        /// Putting everything on both was what made the map a wall of coconuts, and a map that
+        /// shows everything shows nothing.
+        /// </summary>
+        internal static bool IsMapWorthy(Poi p)
+        {
+            if (p == null) return false;
+            // His own pins are always map-worthy: if he took the trouble to mark a spot, it is by
+            // definition somewhere he means to go back to.
+            if (p.Kind == PoiKind.Manual) return true;
+            if (p.Label == null) return false;
+            return p.Label == "Iron" || p.Label == "Anthill" || p.Label == "Honey";
+        }
 
         /// <summary>One item, classified. Shared with the live layer so both surfaces agree on what
         /// a thing is and what it is called.</summary>

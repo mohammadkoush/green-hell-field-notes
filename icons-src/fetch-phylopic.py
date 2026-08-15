@@ -75,6 +75,12 @@ TAXA = {
     "molineria": ["Rubus", "Vaccinium"],
     "mushroom":  ["Agaricus", "Basidiomycota"],
     "plant":     ["Magnoliopsida", "Tracheophyta"],
+
+    # The three the notepad map carries. Ant and bee stand in for anthill and beehive - the
+    # occupant is far more recognisable at icon size than the structure, and nobody mistakes an
+    # ant for anything else.
+    "anthill":   ["Formicidae", "Atta"],
+    "honey":     ["Apis mellifera", "Apidae"],
 }
 
 FREE = ("publicdomain", "/zero/", "cc0")

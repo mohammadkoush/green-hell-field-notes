@@ -220,9 +220,12 @@ namespace FieldNotes
                 "Draw the north tick on the minimap rim. Only ever drawn in heading-up mode - with " +
                 "north-up it would always be straight up and would say nothing.");
 
-            _iconScale = Config.Bind("Minimap", "IconScale", 0.115f,
+            // Halved from 0.115 on request. Note this is a LINEAR scale, so halving it makes each
+            // icon a quarter of the area - if that turns out to be too small, 0.08 is the
+            // half-visual-weight value rather than 0.058.
+            _iconScale = Config.Bind("Minimap", "IconScale", 0.058f,
                 new ConfigDescription("Icon size as a share of the minimap box.",
-                    new AcceptableValueRange<float>(0.03f, 0.3f)));
+                    new AcceptableValueRange<float>(0.02f, 0.3f)));
 
             _mapMarksOn = Config.Bind("Map", "DrawOnGameMap", true,
                 "Draw the notebook onto the game's own map pages.");
@@ -386,8 +389,11 @@ namespace FieldNotes
             {
                 _mapMarksOn.Value = !_mapMarksOn.Value;
                 if (!_mapMarksOn.Value) _markers.Clear(); else _nextMarkerRefreshAt = 0f;
-                Begin(); Say("map markers " + (_mapMarksOn.Value ? "on" : "off") +
-                             (_markers.LastNote.Length > 0 ? "  -  " + _markers.LastNote : ""));
+                Begin(); Say("map markers " + (_mapMarksOn.Value ? "on" : "off"));
+                Say(_markers.LastNote.Length > 0 ? _markers.LastNote
+                                                 : "no report yet - open the notepad map and press again");
+                Say("the map carries iron, anthills, beehives and your own pins. Everything else " +
+                    "is minimap only.");
             }
 
             // Checked BEFORE the live key: Shift+Keypad6 also satisfies plain Keypad6, so without

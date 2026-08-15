@@ -221,11 +221,11 @@ Write-Host "Creatures" -ForegroundColor Cyan
 # Beige background with a pattern printed on it, so this one is chroma-keyed off a sampled corner.
 # snake.png is drawn now, not keyed from the colour illustration - see draw-icons.ps1.
 # The watermark lives in the bottom strip; cut it off before anything else looks at the picture.
-Convert-Icon -Path $spider -X 0 -Y 10 -W 260 -H 215 -Mode silhouette -OutName 'spider.png'
-Convert-Icon -Path $scorpion -X 0 -Y 0 -W 0 -H 0 -Mode silhouette -OutName 'scorpion.png'
+# superseded by PhyloPic: 'spider.png'
+# superseded by PhyloPic: 'scorpion.png'
 # Far right of the three, as asked: the prowling full body reads as an animal at icon size, where
 # the two head crests would just be a dark blob.
-Convert-Icon -Path $cats -X 395 -Y 80 -W 232 -H 210 -Mode silhouette -OutName 'predator.png'
+# superseded by PhyloPic: 'predator.png'
 
 Write-Host "The two I could not draw" -ForegroundColor Cyan
 # Both supplied after four failed attempts each at drawing them. Black-on-white goes through the
@@ -234,10 +234,11 @@ Write-Host "The two I could not draw" -ForegroundColor Cyan
 $anteaterSrc = Join-Path $SrcDir 'shot-20260814-194840.png'
 $cassavaSrc  = Join-Path $SrcDir 'shot-20260814-194941.png'
 if (Test-Path $anteaterSrc) {
-    Convert-Icon -Path $anteaterSrc -X 0 -Y 0 -W 0 -H 0 -Mode silhouette -OutName 'anteater.png'
+    # superseded by PhyloPic: 'anteater.png'
 }
 if (Test-Path $cassavaSrc) {
-    Convert-Icon -Path $cassavaSrc -X 0 -Y 0 -W 0 -H 0 -Mode badge -OutName 'cassava.png'
+    # cassava is sourced from PhyloPic (Manihot esculenta) now - his badge image is kept
+    # in source/ in case it is ever wanted back.
 }
 
 # PLANTS AND THE COCONUT ARE NO LONGER CUT HERE. They are drawn white by draw-icons.ps1, because
@@ -401,7 +402,7 @@ function New-Shape {
     Remove-Item $tmp -Force -ErrorAction SilentlyContinue
 }
 
-New-Shape -OutName 'stingray.png' -Shape 'stingray'
+# stingray now comes from PhyloPic (Potamotrygon)
 New-Shape -OutName 'birdnest.png' -Shape 'birdnest'
 New-Shape -OutName 'camp.png'     -Shape 'crafted'
 

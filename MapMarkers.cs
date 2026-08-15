@@ -187,9 +187,25 @@ namespace FieldNotes
                               bool flipU, bool flipV, bool swapUV, float markerScale, bool hideEmpty,
                               bool spawnsOn)
         {
+            // SAY WHY, EVERY TIME.
+            //
+            // This subsystem has never drawn a single visible thing and has taken four blind fixes,
+            // because "nothing appeared" was all anyone ever had to go on. Every exit below now
+            // records a reason, and the reasons are distinct - page not found, page unmeasurable,
+            // everything off-sheet, nothing map-worthy - because they need different fixes and
+            // guessing between them is what produced the last four rounds.
             string label;
             GameObject page = GetNotepadPage(out label);
-            if (page == null) { if (_spawned.Count > 0) Clear(); return; }
+            if (page == null)
+            {
+                MapTab tab = MapTab.Get();
+                LastNote = (tab == null)
+                    ? "no MapTab in the scene - the notepad has never been opened this session"
+                    : "MapTab exists but has no usable page (m_MapDatas has " +
+                      (tab.m_MapDatas == null ? "no dictionary" : tab.m_MapDatas.Count + " entries") + ")";
+                if (_spawned.Count > 0) Clear();
+                return;
+            }
 
             // Live things move, so the map has to be rebuilt whenever their count changes as well as
             // when the notebook grows. The refresh runs on a one second timer, which is as live as a
@@ -217,6 +233,11 @@ namespace FieldNotes
             foreach (Poi p in store.All)
             {
                 if (!enabled(p.Kind)) continue;
+
+                // THE MAP IS NOT THE MINIMAP. It carries only the handful of things worth walking
+                // across the island for - iron, anthills, beehives, and his own pins. Everything
+                // else lives on the minimap, where "what is near me right now" is the question.
+                if (!Discovery.IsMapWorthy(p)) continue;
 
                 // Same rule as the minimap: an empty tree is not drawn. Hidden, not forgotten.
                 if (hideEmpty && !p.InStock &&
@@ -251,8 +272,10 @@ namespace FieldNotes
                 if (q != null) { _spawned.Add(q); placed++; }
             }
 
+            // The live layer is deliberately NOT drawn on the map. A map is for places, and a
+            // wandering jaguar is not a place - it is exactly the thing the minimap exists for.
             int liveOn = 0;
-            if (live != null)
+            if (false && live != null)
             {
                 for (int i = 0; i < live.Count; i++)
                 {
@@ -281,9 +304,17 @@ namespace FieldNotes
                 }
             }
 
-            LastNote = "page " + label + ": " + placed + " known + " + liveOn + " live, " +
-                       offSheet + " off-sheet (" + f.Samples + " elements, axes " +
-                       f.AxU + "/" + f.AxV + ")";
+            // The distinct outcomes, each pointing at its own fix.
+            if (placed == 0 && offSheet == 0)
+                LastNote = "page " + label + ": nothing map-worthy known yet. The map only carries " +
+                           "iron, anthills, beehives and your own pins - find one, or drop a pin.";
+            else if (placed == 0 && offSheet > 0)
+                LastNote = "page " + label + ": ALL " + offSheet + " markers landed OFF-SHEET. The " +
+                           "world-to-map maths is wrong for this page - Keypad1 dumps the frame.";
+            else
+                LastNote = "page " + label + ": " + placed + " placed, " + offSheet + " off-sheet (" +
+                           f.Samples + " elements measured, axes " + f.AxU + "/" + f.AxV +
+                           ", parent active=" + page.activeInHierarchy + ")";
         }
 
         /// <summary>

@@ -11,6 +11,7 @@ is not. Originals are kept in `icons-src/sourced/`.
 | agouti | Dasyprocta leporina | public domain / CC0 | Margot Michaud | https://creativecommons.org/publicdomain/zero/1.0/ |
 | animal | Odocoileus virginianus | public domain / CC0 | Abby Weber | https://creativecommons.org/publicdomain/zero/1.0/ |
 | anteater | Cyclopes didactylus | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
+| anthill | Martialis heureka | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/zero/1.0/ |
 | armadillo | Dasypus novemcinctus | public domain / CC0 | Steven Traver | https://creativecommons.org/publicdomain/zero/1.0/ |
 | banana | Ensete ventricosum | public domain / CC0 | JBORRELL | https://creativecommons.org/publicdomain/zero/1.0/ |
 | bat | Artibeus planirostris | CC BY | Jorge D. Carballo Morales | https://creativecommons.org/licenses/by/4.0/ |
@@ -22,6 +23,7 @@ is not. Originals are kept in `icons-src/sourced/`.
 | crab | Cancer bellianus | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | fish | Knodus | CC BY | Melo-Ortiz Omar Edu. | https://creativecommons.org/licenses/by/4.0/ |
 | frog | Dendrobates tinctorius | public domain / CC0 | Steven Traver | https://creativecommons.org/publicdomain/zero/1.0/ |
+| honey | Apis mellifera | public domain / CC0 | Lubna Maherally | https://creativecommons.org/publicdomain/zero/1.0/ |
 | lizard | Iguana iguana | public domain / CC0 | Becky Barnes | https://creativecommons.org/publicdomain/zero/1.0/ |
 | molineria | Vaccinium erythrocarpum | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/mark/1.0/ |
 | monkey | Ateles | public domain / CC0 | Steven Traver | https://creativecommons.org/publicdomain/zero/1.0/ |
