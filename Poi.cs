@@ -33,6 +33,11 @@ namespace FieldNotes
         Resource,   // food, water, useful pickups
         Predator,   // jaguar, puma, panther - the things that hunt you
         Savage,     // hostile humans
+        // Harmless unless you HANDLE it. A poison dart frog cannot come at you and cannot touch you
+        // unless you reach out and pick it up - which is a completely different kind of danger from
+        // a spider or a stingray, and a proximity alarm for something that cannot approach is noise
+        // pretending to be information. Its own kind so it can be its own colour and its own switch.
+        Frog,
         Snake,
         Critter,    // spiders, scorpions, centipedes
         Camp,       // camp gear and abandoned camps

@@ -345,6 +345,8 @@ namespace FieldNotes
             Toggle("Savages", p.CfgShowSavage, "", _hint);
             Toggle("Snakes", p.CfgShowSnake, "", _hint);
             Toggle("Spiders, scorpions, stingrays", p.CfgShowCritter, "", _hint);
+            Toggle("Frogs", p.CfgShowFrog,
+                   "Only dangerous if you pick one up, so no ring and no reveal - just a mark.", _hint);
             Toggle("Food animals", p.CfgShowFood, "", _hint);
             Toggle("Plants and fruit", p.CfgShowResource, "", _hint);
             Toggle("Camp gear", p.CfgShowCamp, "", _hint);
@@ -355,6 +357,10 @@ namespace FieldNotes
                    "What is actually out there right now, on top of what you remember.", _hint);
             Toggle("Live things use the halo", p.CfgLiveHalo,
                    "Off: live things sit where they really are instead of on the ring.", _hint);
+            Slider("Remembered mark fade", p.CfgSpawnFade, 0.1f, 1f, "", _hint);
+            GUILayout.Label("      How faint a remembered spawn point is next to a live animal. "
+                            + "They used to look identical, which is what made the layer confusing.",
+                            _hint);
             Toggle("Remembered spawn points", p.CfgSpawnsOn,
                    "Creature spawn points only. Your resources and pins are not affected.", _hint);
             Toggle("Hide emptied resources", p.CfgHideEmpty,

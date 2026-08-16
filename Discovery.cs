@@ -110,10 +110,11 @@ namespace FieldNotes
                 case AIs.AI.AIID.Stalker:
                     kind = PoiKind.Predator; return true;
 
-                // Poisonous rather than edible - touching one is the problem, so it belongs with the
-                // things you want to know about before you tread on them.
+                // Its own category, not a critter. Touching one is the problem and it will never
+                // come to you, so it gets no detection ring and no reveal - just a mark that says
+                // "do not grab this one".
                 case AIs.AI.AIID.PoisonDartFrog:
-                    kind = PoiKind.Critter; return true;
+                    kind = PoiKind.Frog; return true;
 
                 default:
                     return false;   // everything else is scenery as far as this mod is concerned

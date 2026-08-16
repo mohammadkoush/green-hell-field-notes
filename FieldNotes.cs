@@ -58,7 +58,8 @@ namespace FieldNotes
 
         private ConfigEntry<float> _rPredator, _rSavage, _rSnake, _rCritter;
         private ConfigEntry<bool>  _showPredator, _showSavage, _showSnake, _showCritter,
-                                   _showResource, _showCamp, _showManual, _hideEmpty, _showFood;
+                                   _showResource, _showCamp, _showManual, _hideEmpty, _showFood,
+                                   _showFrog;
 
         private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
@@ -66,6 +67,7 @@ namespace FieldNotes
         private ConfigEntry<float> _liveRange, _liveEvery, _iconScale;
         private ConfigEntry<bool>  _revealOn;
         private ConfigEntry<float> _revealFraction, _morphSeconds;
+        private ConfigEntry<float> _spawnFade;
 
         // ---- runtime -----------------------------------------------------------------------------
         private float _nextScanAt;
@@ -132,17 +134,24 @@ namespace FieldNotes
             _rSavage = Config.Bind("Detection", "SavageRadius", 60f,
                 new ConfigDescription("Hostile humans. Far. (Nothing feeds this yet - see the README.)",
                     new AcceptableValueRange<float>(5f, 300f)));
-            _rSnake = Config.Bind("Detection", "SnakeRadius", 22f,
+            // 10 METRES, his number, and metres is now the unit for everything he asks for. Small
+            // things are not supposed to give you room - they are supposed to make you jump - so
+            // they appear late and reveal later. Ten metres is also about as close as a mark can sit
+            // to the centre and still clear the player arrow on an 80m map.
+            _rSnake = Config.Bind("Detection", "SnakeRadius", 10f,
                 new ConfigDescription("Close, but not close enough to give the game away.",
                     new AcceptableValueRange<float>(3f, 200f)));
-            _rCritter = Config.Bind("Detection", "CritterRadius", 16f,
-                new ConfigDescription("Spiders, scorpions, centipedes. Closest of all.",
+            _rCritter = Config.Bind("Detection", "CritterRadius", 10f,
+                new ConfigDescription("Spiders, scorpions, stingrays. Closest of all.",
                     new AcceptableValueRange<float>(3f, 200f)));
 
             _showPredator = Config.Bind("Show", "Predators", true, "");
             _showSavage   = Config.Bind("Show", "Savages", true, "");
             _showSnake    = Config.Bind("Show", "Snakes", true, "");
             _showCritter  = Config.Bind("Show", "Critters", true, "");
+            _showFrog     = Config.Bind("Show", "Frogs", true,
+                "Poison dart frogs. Their own category because they cannot come at you - the only " +
+                "way one hurts you is if you pick it up.");
             _showResource = Config.Bind("Show", "Resources", true, "Food and water worth walking to.");
             _showCamp     = Config.Bind("Show", "CampGear", true, "");
             _showFood     = Config.Bind("Show", "FoodAnimals", true,
@@ -249,6 +258,13 @@ namespace FieldNotes
                     "event rather than a redraw you can miss.",
                     new AcceptableValueRange<float>(0f, 5f)));
 
+            _spawnFade = Config.Bind("Spawns", "RememberedOpacity", 0.45f,
+                new ConfigDescription(
+                    "How faint a REMEMBERED spawn point is next to a live animal. They used the " +
+                    "same icon at the same weight, so 'one comes from here' and 'one is here now' " +
+                    "were indistinguishable. Faded and a little smaller, the living one always wins.",
+                    new AcceptableValueRange<float>(0.1f, 1f)));
+
             Palette.Bind(Config);
 
             _holds = new WindowHolds(Logger);
@@ -290,6 +306,7 @@ namespace FieldNotes
         internal ConfigEntry<bool>   CfgShowSnake   { get { return _showSnake; } }
         internal ConfigEntry<bool>   CfgShowCritter { get { return _showCritter; } }
         internal ConfigEntry<bool>   CfgShowFood    { get { return _showFood; } }
+        internal ConfigEntry<bool>   CfgShowFrog    { get { return _showFrog; } }
         internal ConfigEntry<bool>   CfgShowResource{ get { return _showResource; } }
         internal ConfigEntry<bool>   CfgShowCamp    { get { return _showCamp; } }
         internal ConfigEntry<bool>   CfgShowManual  { get { return _showManual; } }
@@ -306,6 +323,7 @@ namespace FieldNotes
         internal ConfigEntry<bool>   CfgRevealOn    { get { return _revealOn; } }
         internal ConfigEntry<float>  CfgRevealFraction { get { return _revealFraction; } }
         internal ConfigEntry<float>  CfgMorphSeconds{ get { return _morphSeconds; } }
+        internal ConfigEntry<float>  CfgSpawnFade   { get { return _spawnFade; } }
 
         // ---- helpers ---------------------------------------------------------------------------
 
@@ -343,6 +361,7 @@ namespace FieldNotes
                 case PoiKind.Critter:  return _showCritter.Value;
                 case PoiKind.Resource: return _showResource.Value;
                 case PoiKind.Camp:     return _showCamp.Value;
+                case PoiKind.Frog:     return _showFrog.Value;
                 case PoiKind.Food:     return _showFood.Value;
                 default:               return _showManual.Value;
             }
@@ -601,6 +620,7 @@ namespace FieldNotes
                                  _headingUp.Value, _liveHalo.Value, _iconScale.Value,
                                  _hideEmpty.Value, _showNorth.Value, _spawnsOn.Value,
                                  _revealOn.Value, _revealFraction.Value, _morphSeconds.Value,
+                                 _spawnFade.Value,
                                  RadiusOf, Enabled);
                 }
             }

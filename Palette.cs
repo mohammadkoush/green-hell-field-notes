@@ -30,7 +30,7 @@ namespace FieldNotes
         internal static readonly PoiKind[] Order = new PoiKind[]
         {
             PoiKind.Predator, PoiKind.Savage, PoiKind.Snake, PoiKind.Critter,
-            PoiKind.Food, PoiKind.Resource, PoiKind.Camp, PoiKind.Manual,
+            PoiKind.Frog, PoiKind.Food, PoiKind.Resource, PoiKind.Camp, PoiKind.Manual,
         };
 
         internal static string LabelOf(PoiKind kind)
@@ -41,6 +41,7 @@ namespace FieldNotes
                 case PoiKind.Savage:   return "Savages";
                 case PoiKind.Snake:    return "Snakes";
                 case PoiKind.Critter:  return "Spiders, scorpions, stingrays";
+                case PoiKind.Frog:     return "Frogs - only dangerous to handle";
                 case PoiKind.Food:     return "Food animals";
                 case PoiKind.Resource: return "Plants and fruit";
                 case PoiKind.Camp:     return "Camp gear";
@@ -55,6 +56,9 @@ namespace FieldNotes
             Add(config, PoiKind.Savage,   DangerRed);
             Add(config, PoiKind.Snake,    DangerRed);
             Add(config, PoiKind.Critter,  DangerRed);
+            // AMBER, his choice, and deliberately NOT red: red means "this can come at you", and a
+            // frog cannot. Amber reads as "caution, do not touch" without claiming to be a threat.
+            Add(config, PoiKind.Frog,     "#FFB300");
             Add(config, PoiKind.Food,     "#FFFFFF");
             Add(config, PoiKind.Resource, "#FFFFFF");
             Add(config, PoiKind.Camp,     "#FFFFFF");

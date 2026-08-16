@@ -239,6 +239,13 @@ namespace FieldNotes
             }
         }
 
+        /// <summary>
+        /// Things that can come AT you. Frogs are deliberately absent: a poison dart frog cannot
+        /// approach and cannot hurt you unless you pick it up, so a detection ring and a
+        /// grey-to-red reveal would both be answering a question it never asks. It is drawn plainly,
+        /// where it actually is, in its own amber - "do not grab this one" rather than "something is
+        /// hunting you".
+        /// </summary>
         internal static bool IsThreat(PoiKind k)
         {
             return k == PoiKind.Predator || k == PoiKind.Savage ||
@@ -254,6 +261,7 @@ namespace FieldNotes
                                   float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
                                   float iconScale, bool hideEmpty, bool showNorth, bool spawnsOn,
                                   bool revealOn, float revealFraction, float morphSeconds,
+                                  float spawnFade,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
             s_Seen.Clear();
@@ -307,9 +315,15 @@ namespace FieldNotes
                     if (dist * pixelsPerMetre > half - 4f) continue;
                     float x = centre.x + Mathf.Sin(rad) * dist * pixelsPerMetre;
                     float y = centre.y - Mathf.Cos(rad) * dist * pixelsPerMetre;
-                    MarkTinted(x, y, iconPx, p.Kind, p.Label,
-                               RevealColour(p.Kind, p.Label, p.Pos, 0, dist,
-                                            radiusOf, revealFraction, morphSeconds));
+                    // REMEMBERED, not present. Spawn points used the same icon at the same weight
+                    // as a live animal, so "a jaguar comes from here" and "a jaguar is here NOW"
+                    // looked identical - which made the layer worse than useless and had him
+                    // turning it off. A remembered mark is now faded and slightly smaller, so the
+                    // living one always reads louder.
+                    Color sc = RevealColour(p.Kind, p.Label, p.Pos, 0, dist,
+                                            radiusOf, revealFraction, morphSeconds);
+                    sc.a = spawnFade;
+                    MarkTinted(x, y, iconPx * 0.8f, p.Kind, p.Label, sc);
                 }
                 else if (IsThreat(p.Kind))
                 {
