@@ -130,7 +130,8 @@ namespace FieldNotes
             DrawTabs();
             GUILayout.Space(8f);
 
-            _scroll = GUILayout.BeginScrollView(_scroll);
+            _scroll = GUILayout.BeginScrollView(_scroll,
+                          GUILayout.Height(_rect.height - 140f));
             switch (_tab)
             {
                 case 0: Minimap_(plugin); break;
@@ -142,7 +143,19 @@ namespace FieldNotes
             }
             GUILayout.EndScrollView();
 
+            // The explanation for whatever the pointer is over, in ONE place at the foot of the
+            // window. Reserved height whether or not there is anything to say, so the settings above
+            // never jump as the pointer moves across them - a panel that reflows under the cursor is
+            // harder to use than one that says nothing.
+            GUILayout.Space(4f);
+            Fill(new Rect(_rect.x + 10f, _rect.yMax - 62f, _rect.width - 20f, 1f),
+                 new Color(1f, 1f, 1f, 0.10f));
             GUILayout.EndArea();
+
+            string tip = GUI.tooltip;
+            Rect tipRect = new Rect(_rect.x + 14f, _rect.yMax - 56f, _rect.width - 28f, 48f);
+            GUI.Label(tipRect, string.IsNullOrEmpty(tip) ? "hover a setting to see what it does" : tip,
+                      _hint);
         }
 
         private void DrawTabs()
@@ -170,25 +183,38 @@ namespace FieldNotes
 
         // ---- rows --------------------------------------------------------------------------------
 
+        // EXPLANATIONS ON HOVER, not stacked under every row. He asked for "an info tag to explain
+        // settings when I hover over its title", and he was right to: the hints were three lines of
+        // grey under each control, so a tab of eight settings was mostly explanation and the
+        // settings themselves were hard to find. IMGUI has this built in - a GUIContent carries a
+        // tooltip, and GUI.tooltip holds whatever the pointer is over - so this needs no new
+        // machinery, only using what was already there.
+        //
+        // The text still exists for every setting; it has just moved to where it is asked for.
         private static void Toggle(string label, ConfigEntry<bool> entry, string hint, GUIStyle hintStyle)
         {
             GUILayout.BeginHorizontal();
-            bool now = GUILayout.Toggle(entry.Value, "  " + label);
+            bool now = GUILayout.Toggle(entry.Value, new GUIContent("  " + label, hint));
             if (now != entry.Value) entry.Value = now;
             GUILayout.EndHorizontal();
-            if (!string.IsNullOrEmpty(hint)) GUILayout.Label("      " + hint, hintStyle);
         }
 
         private static void Slider(string label, ConfigEntry<float> entry, float lo, float hi,
-                                   string suffix, GUIStyle hintStyle)
+                                   string suffix, GUIStyle hintStyle, string hint)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, GUILayout.Width(190f));
+            GUILayout.Label(new GUIContent(label, hint), GUILayout.Width(190f));
             float now = GUILayout.HorizontalSlider(entry.Value, lo, hi);
             GUILayout.Label(entry.Value.ToString(entry.Value < 1f ? "0.000" : "0") + suffix,
                             GUILayout.Width(64f));
             GUILayout.EndHorizontal();
             if (Mathf.Abs(now - entry.Value) > 0.0001f) entry.Value = now;
+        }
+
+        private static void Slider(string label, ConfigEntry<float> entry, float lo, float hi,
+                                   string suffix, GUIStyle hintStyle)
+        {
+            Slider(label, entry, lo, hi, suffix, hintStyle, "");
         }
 
         // ---- tabs --------------------------------------------------------------------------------
@@ -209,13 +235,10 @@ namespace FieldNotes
                     p.CfgMinimapSize.Value = sizes[i];
             }
             GUILayout.EndHorizontal();
-            GUILayout.Label("      A share of screen height - 16% / 22% / 30% - so it looks the same "
-                            + "on any monitor.", _hint);
             GUILayout.Space(6f);
 
-            Slider("Silhouette size", p.CfgIconScale, 0.02f, 0.30f, "", _hint);
-            GUILayout.Label("      Share of the minimap box. This is a LINEAR scale, so halving the "
-                            + "number makes each icon a quarter of the area.", _hint);
+            Slider("Silhouette size", p.CfgIconScale, 0.02f, 0.30f, "", _hint,
+                   "Share of the minimap box. A LINEAR scale, so halving the number makes each icon a QUARTER of the area.");
             Slider("Range", p.CfgRange, 20f, 400f, "m", _hint);
             Slider("Ring thickness", p.CfgBand, 2f, 60f, "m", _hint);
             Slider("Ping hold", p.CfgPingHold, 0f, 15f, "s", _hint);
@@ -328,13 +351,10 @@ namespace FieldNotes
             Toggle("Use the reveal", p.CfgRevealOn,
                    "Off: the old halo ping - legible at exactly one distance, then quiet.", _hint);
             GUILayout.Space(6f);
-            Slider("Colour turns on at", p.CfgRevealFraction, 0.05f, 1f, " x", _hint);
-            GUILayout.Label("      A share of each category's OWN detection radius, so they keep "
-                            + "their character. At 0.40 a jaguar reveals around 22m and a snake "
-                            + "around 9m.", _hint);
-            Slider("Morph time", p.CfgMorphSeconds, 0f, 5f, "s", _hint);
-            GUILayout.Label("      One second to start with. Two if it goes by too fast to notice.",
-                            _hint);
+            Slider("Colour turns on at", p.CfgRevealFraction, 0.05f, 1f, " x", _hint,
+                   "A share of each category's OWN detection radius, so they keep their character. At 0.5 a snake reveals at 5m and a jaguar much further out.");
+            Slider("Morph time", p.CfgMorphSeconds, 0f, 5f, "s", _hint,
+                   "How long dimmed-to-full takes. The movement is what makes the change read as an event rather than a redraw you can miss.");
         }
 
         private void Show(FieldNotesPlugin p)
@@ -357,10 +377,8 @@ namespace FieldNotes
                    "What is actually out there right now, on top of what you remember.", _hint);
             Toggle("Live things use the halo", p.CfgLiveHalo,
                    "Off: live things sit where they really are instead of on the ring.", _hint);
-            Slider("Remembered mark fade", p.CfgSpawnFade, 0.1f, 1f, "", _hint);
-            GUILayout.Label("      How faint a remembered spawn point is next to a live animal. "
-                            + "They used to look identical, which is what made the layer confusing.",
-                            _hint);
+            Slider("Remembered mark fade", p.CfgSpawnFade, 0.1f, 1f, "", _hint,
+                   "How faint a remembered spawn point is next to a live animal. They used to look identical, which is what made the layer confusing.");
             Toggle("Remembered spawn points", p.CfgSpawnsOn,
                    "Creature spawn points only. Your resources and pins are not affected.", _hint);
             Toggle("Hide emptied resources", p.CfgHideEmpty,
