@@ -57,6 +57,10 @@ WANTED = {
     # A palm TREE. "Palm - Lorc" is a hand, which is what the word means everywhere except here.
     "palmheart": "File:Palm-tree - Delapouite - game-icons.svg",
     "anteater":  "File:Anteater - Caro Asercion - game-icons.svg",
+    # A cluster, not a single ant: this marks an ANTHILL, so "a nest of them" is the right idea, and
+    # it reads as ants rather than as one long insect. The PhyloPic one it replaces was Martialis
+    # heureka - a real ant, but the blind elongated one, which at 20px is a shrimp.
+    "anthill":   "File:Ants - Delapouite - game-icons.svg",
     # The fallback for "a species is classified but has no icon of its own". A capybara because it
     # is the right continent and reads as a generic mammal; the deer that was here before was neither.
     "animal":    "File:Capybara - Caro Asercion - game-icons.svg",

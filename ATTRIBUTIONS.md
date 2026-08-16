@@ -9,7 +9,6 @@ is not. Originals are kept in `icons-src/sourced/`.
 | icon | taxon, licence, contributor, url |
 |---|---|
 | agouti | Dasyprocta leporina | public domain / CC0 | Margot Michaud | https://creativecommons.org/publicdomain/zero/1.0/ |
-| anthill | Martialis heureka | public domain / CC0 | T. Michael Keesey | https://creativecommons.org/publicdomain/zero/1.0/ |
 | armadillo | Dasypus novemcinctus | public domain / CC0 | Steven Traver | https://creativecommons.org/publicdomain/zero/1.0/ |
 | banana | Ensete ventricosum | public domain / CC0 | JBORRELL | https://creativecommons.org/publicdomain/zero/1.0/ |
 | bat | Artibeus planirostris | CC BY | Jorge D. Carballo Morales | https://creativecommons.org/licenses/by/4.0/ |
@@ -45,6 +44,7 @@ CC BY 3.0. Artists named per icon.
 |---|---|---|---|
 | animal | Capybara - Caro Asercion - game-icons.svg | CC BY 3.0 | Caro Asercion |
 | anteater | Anteater - Caro Asercion - game-icons.svg | CC BY 3.0 | Caro Asercion |
+| anthill | Ants - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | axe | Wood-axe - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
 | birdnest | Nest-eggs - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | bow | Bow-arrow - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |

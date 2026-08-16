@@ -49,7 +49,21 @@ namespace FieldNotes
     internal static class Live
     {
         private static readonly List<LiveThing> _cache = new List<LiveThing>();
+
+        // WHAT THE LAST SWEEP ACTUALLY SAW. Every gather in this file is wrapped in a bare catch,
+        // which means a total failure looks exactly like "nothing nearby" - and that is precisely the
+        // hole the stingray fell into. These counters cost nothing and turn a guess into a reading.
+        internal static string LastReport = "no sweep yet";
         private static float _nextAt;
+        private static int s_Tanks, s_TankFish, s_ActiveAI, s_Classified;
+        private static string s_FishError = "", s_AnimalError = "", s_Nearby = "";
+
+        private static void NoteNearby(Vector3 me, Vector3 p, string what)
+        {
+            if ((p - me).sqrMagnitude > 64f) return;      // 8 metres
+            if (s_Nearby.Length > 400) return;
+            s_Nearby += (s_Nearby.Length > 0 ? ", " : "") + what;
+        }
 
         internal static int Count { get { return _cache.Count; } }
         internal static List<LiveThing> Things { get { return _cache; } }
@@ -63,8 +77,20 @@ namespace FieldNotes
             _cache.Clear();
             float r2 = range * range;
 
+            s_Tanks = s_TankFish = s_ActiveAI = s_Classified = 0;
+            s_FishError = s_AnimalError = "";
+            s_Nearby = "";
+
             if (animals) { GatherAnimals(me, r2); GatherFish(me, r2); }
             if (plants)  GatherItems(me, r2);
+
+            LastReport =
+                "tanks " + s_Tanks + ", fish in them " + s_TankFish +
+                ", active AIs " + s_ActiveAI + ", classified " + s_Classified +
+                ", drawn " + _cache.Count +
+                (s_FishError.Length > 0 ? "  FISH ERROR: " + s_FishError : "") +
+                (s_AnimalError.Length > 0 ? "  ANIMAL ERROR: " + s_AnimalError : "") +
+                (s_Nearby.Length > 0 ? "  within 8m: " + s_Nearby : "");
         }
 
         /// <summary>
@@ -83,7 +109,8 @@ namespace FieldNotes
             try
             {
                 List<AIs.FishTank> tanks = AIs.FishTank.s_FishTanks;
-                if (tanks == null) return;
+                if (tanks == null) { s_FishError = "s_FishTanks is null"; return; }
+                s_Tanks = tanks.Count;
 
                 for (int i = 0; i < tanks.Count; i++)
                 {
@@ -94,7 +121,9 @@ namespace FieldNotes
                     if ((tank.transform.position - me).sqrMagnitude > r2 * 4f) continue;
 
                     int n = 0;
-                    try { n = tank.GetFishesCount(); } catch { continue; }
+                    try { n = tank.GetFishesCount(); }
+                    catch (Exception ex) { s_FishError = "GetFishesCount: " + ex.Message; continue; }
+                    s_TankFish += n;
 
                     for (int f = 0; f < n; f++)
                     {
@@ -109,8 +138,11 @@ namespace FieldNotes
                         try { dead = fish.IsDead(); } catch { }
                         if (dead) continue;
 
+                        NoteNearby(me, p, "fish:" + fish.m_ID);
+
                         PoiKind kind; string label;
                         if (!Discovery.Classify(fish.m_ID, out kind, out label)) continue;
+                        s_Classified++;
 
                         LiveThing t = new LiveThing();
                         t.Kind = kind; t.Label = label; t.Pos = p;
@@ -119,7 +151,7 @@ namespace FieldNotes
                     }
                 }
             }
-            catch { }
+            catch (Exception ex) { s_FishError = ex.GetType().Name + ": " + ex.Message; }
         }
 
         private static void GatherAnimals(Vector3 me, float r2)
@@ -130,7 +162,8 @@ namespace FieldNotes
                 if (mgr == null) return;
 
                 List<AIs.AI> list = mgr.m_ActiveAIs;
-                if (list == null) return;
+                if (list == null) { s_AnimalError = "m_ActiveAIs is null"; return; }
+                s_ActiveAI = list.Count;
 
                 for (int i = 0; i < list.Count; i++)
                 {
@@ -145,6 +178,8 @@ namespace FieldNotes
 
                     Vector3 p = ai.transform.position;
                     if ((p - me).sqrMagnitude > r2) continue;
+
+                    NoteNearby(me, p, "ai:" + ai.m_ID);
 
                     PoiKind kind; string label;
                     if (!Discovery.Classify(ai.m_ID, out kind, out label))

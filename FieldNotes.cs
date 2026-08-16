@@ -44,6 +44,8 @@ namespace FieldNotes
 
         private readonly PoiStore _store = new PoiStore();
         private readonly SettingsWindow _settings = new SettingsWindow();
+        private WindowHolds _holds;
+        private ConfigEntry<bool> _pauseWhileOpen;
 
         // ---- config ------------------------------------------------------------------------------
         private ConfigEntry<KeyboardShortcut> _keyMinimap, _keySize, _keyPin, _keyUnpin,
@@ -227,6 +229,11 @@ namespace FieldNotes
             // colour when it crosses inside - so the grey is a reward for watching the minimap, and
             // the red is what you cannot miss. Replaces the halo ping for threats; the ping is still
             // there behind RevealOn=false for anyone who prefers it.
+            _pauseWhileOpen = Config.Bind("Interface", "PauseWhileOpen", true,
+                "Pause the game while the settings window is open. Your look and movement are " +
+                "blocked either way, because the cursor has to be released for the window to be " +
+                "usable at all and a free cursor must not steer the character.");
+
             _revealOn = Config.Bind("Reveal", "Enabled", true,
                 "Dangerous things are dimmed at range and turn full colour close in. Off: the old " +
                 "halo ping, where a threat is legible at exactly one distance and then goes quiet.");
@@ -244,12 +251,27 @@ namespace FieldNotes
 
             Palette.Bind(Config);
 
+            _holds = new WindowHolds(Logger);
+
             Icons.LoadAll(PluginDir());
             Logger.LogInfo("icons: " + Icons.Loaded + " loaded from " + Icons.Dir +
                            (Icons.LastError.Length > 0 ? "  (" + Icons.LastError + ")" : ""));
 
             Logger.LogInfo(Name + " " + Version + " loaded. Keypad3 minimap, Keypad8 size, " +
                            "Keypad4 pin, Keypad0 unpin, Keypad9 report, Keypad6 live layer.");
+        }
+
+        /// <summary>
+        /// Open or close the settings window, taking and handing back the game state that goes with
+        /// it. Nothing else may change Visible - see WindowHolds for why one-sided holds are the
+        /// failure that cannot be recovered from without restarting the game.
+        /// </summary>
+        private void ShowSettings(bool on)
+        {
+            _settings.WantsClose = false;
+            _settings.SetVisible(on);
+            if (on) _holds.Take(_pauseWhileOpen.Value);
+            else _holds.ReleaseAll();
         }
 
         // ---- what the settings window may touch --------------------------------------------------
@@ -394,6 +416,21 @@ namespace FieldNotes
             {
                 // Update runs every frame; a throw here would repeat forever.
                 Logger.LogWarning("update: " + ex.Message);
+
+                // THE FAULT GUARD. If we threw while the window was open, the window may stop
+                // responding while the game stays paused with a free cursor and no key that helps -
+                // unrecoverable short of restarting. Hand everything back and shut the window rather
+                // than leave him stuck in a mod that has already failed once this frame.
+                try
+                {
+                    if (_settings.Visible)
+                    {
+                        _settings.SetVisible(false);
+                        if (_holds != null) _holds.ReleaseAll();
+                        Logger.LogWarning("settings window closed by the fault guard.");
+                    }
+                }
+                catch { }
             }
         }
 
@@ -431,7 +468,14 @@ namespace FieldNotes
                              (_liveOn.Value ? "  (" + Live.Count + " things nearby)" : ""));
             }
 
-            if (_keySettings.Value.IsDown()) _settings.Toggle();
+            if (_keySettings.Value.IsDown()) ShowSettings(!_settings.Visible);
+
+            if (_settings.Visible)
+            {
+                // Escape closes, and the press is consumed here so the game's own menu does not open
+                // behind the window.
+                if (_settings.WantsClose || Input.GetKeyDown(KeyCode.Escape)) ShowSettings(false);
+            }
             if (_keyPin.Value.IsDown()) DropPin();
             if (_keyUnpin.Value.IsDown()) RemoveNearestPin();
             if (_keyReport.Value.IsDown()) Report();
@@ -524,10 +568,20 @@ namespace FieldNotes
             Say("  live now: " + (_liveOn.Value ? Live.Count + " nearby" : "layer off") +
                 "   icons: " + Icons.Loaded);
             Say("  notebook: " + _store.Path_);
+
+            // What the live sweep actually saw. Every gather in Live.cs is wrapped in a catch, so a
+            // total failure used to look identical to "nothing nearby" - which is exactly how the
+            // stingray hid. This turns that into a reading.
+            Say("  live sweep: " + Live.LastReport);
+            Logger.LogInfo("live sweep: " + Live.LastReport);
         }
 
         private void OnDestroy()
         {
+            // The holds come back FIRST. The plugin can go away with the window open - a reload, a
+            // scene change, a fault - and if the cursor, the input block and the pause went with it,
+            // the game would be left paused and unplayable with no key that helps.
+            try { if (_holds != null) _holds.ReleaseAll(); } catch { }
             try { _store.Save(); } catch { }
         }
 

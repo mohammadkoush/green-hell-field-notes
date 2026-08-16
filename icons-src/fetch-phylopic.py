@@ -42,7 +42,7 @@ SIZE = 64
 # icon name -> taxa to try, best first. Scientific names, because PhyloPic is taxonomic: asking for
 # "capybara" finds nothing and asking for Hydrochoerus finds the animal.
 TAXA = {
-    # anteater, animal, caveman, mushroom, palmheart and plant deliberately do NOT live here
+    # anteater, animal, anthill, caveman, mushroom, palmheart and plant deliberately do NOT live here
     # any more - they come from game-icons via fetch-gameicons.py. Two scripts owning one
     # filename is the double-write bug that has landed twice; the sets must stay disjoint.
     "tapir":     ["Tapirus", "Tapiridae"],
@@ -76,7 +76,6 @@ TAXA = {
     # The three the notepad map carries. Ant and bee stand in for anthill and beehive - the
     # occupant is far more recognisable at icon size than the structure, and nobody mistakes an
     # ant for anything else.
-    "anthill":   ["Formicidae", "Atta"],
     "honey":     ["Apis mellifera", "Apidae"],
 }
 

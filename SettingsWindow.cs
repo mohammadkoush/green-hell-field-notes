@@ -23,6 +23,9 @@ namespace FieldNotes
     {
         internal bool Visible;
 
+        /// <summary>Set by the close button. The plugin owns closing, because closing means releasing.</summary>
+        internal bool WantsClose;
+
         // THE ORDER IS THE CONTRACT. Append only.
         private static readonly string[] Tabs = { "MINIMAP", "COLOURS", "REVEAL", "SHOW", "DETECTION", "KEYS" };
         private int _tab;
@@ -46,7 +49,10 @@ namespace FieldNotes
             "#FF7BC1", "#C9A227", "#9AA3B0", "#6B7280",
         };
 
-        internal void Toggle() { Visible = !Visible; _picking = false; }
+        // The window never flips its own flag any more. Opening and closing has to take and hand back
+        // the cursor, the input block and the pause, and a bool that could be set without doing that
+        // is exactly how the game ends up paused with no way out.
+        internal void SetVisible(bool on) { Visible = on; _picking = false; }
 
         private static Texture2D Px()
         {
@@ -118,7 +124,7 @@ namespace FieldNotes
             GUILayout.BeginHorizontal();
             GUILayout.Label("FIELD NOTES", _head);
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("close", GUILayout.Width(58f))) { Visible = false; _picking = false; }
+            if (GUILayout.Button("close", GUILayout.Width(58f))) WantsClose = true;
             GUILayout.EndHorizontal();
 
             DrawTabs();
