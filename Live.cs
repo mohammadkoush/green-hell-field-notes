@@ -219,7 +219,7 @@ namespace FieldNotes
                     try { if (it.m_InInventory || it.m_InStorage) continue; } catch { }
 
                     PoiKind kind; string label;
-                    if (!Discovery.LookUpItem(it.m_Info.m_ID, out kind, out label)) continue;
+                    if (!Discovery.LookUpItem(it.m_Info, out kind, out label)) continue;
 
                     Vector3 p = it.transform.position;
                     if ((p - me).sqrMagnitude > r2) continue;

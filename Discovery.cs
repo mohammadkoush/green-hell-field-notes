@@ -222,6 +222,60 @@ namespace FieldNotes
             kind = PoiKind.Resource; label = null; return false;
         }
 
+        /// <summary>
+        /// The same lookup, but able to ASK THE GAME when the curated list has nothing.
+        ///
+        /// His question, and it is the right one: why keep a hand-typed list of names at all when
+        /// the game already knows what everything is? It does - every ItemInfo carries an ItemType,
+        /// the game's own classification: Food, Herb, Seed, Dressing, Bowl, LiquidContainer,
+        /// ItemTool, Weapon and so on.
+        ///
+        /// So the curated table stays for the things worth NAMING - a coconut should say "Coconut"
+        /// and get a coconut icon - and everything else falls through to what the game says it is.
+        /// A list I typed can be wrong and go stale in silence, which is exactly what happened: 24
+        /// of 43 names never existed. A category read from the item itself cannot.
+        /// </summary>
+        internal static bool LookUpItem(ItemInfo info, out PoiKind kind, out string label)
+        {
+            kind = PoiKind.Resource; label = null;
+            if (info == null) return false;
+
+            if (LookUpItem(info.m_ID, out kind, out label)) return true;
+
+            try
+            {
+                switch (info.m_Type)
+                {
+                    // Worth walking to: things you eat, brew or plant.
+                    case Enums.ItemType.Food:
+                    case Enums.ItemType.Herb:
+                    case Enums.ItemType.Seed:
+                        kind = PoiKind.Resource;
+                        label = Pretty(info.m_ID);
+                        return true;
+
+                    // Worth remembering where you left it.
+                    case Enums.ItemType.Bowl:
+                    case Enums.ItemType.LiquidContainer:
+                    case Enums.ItemType.Dressing:
+                    case Enums.ItemType.ItemTool:
+                    case Enums.ItemType.Torch:
+                        kind = PoiKind.Camp;
+                        label = Pretty(info.m_ID);
+                        return true;
+                }
+            }
+            catch (Exception) { }
+
+            return false;
+        }
+
+        /// <summary>"Cassava_bulb" reads badly on a map; "Cassava bulb" does not.</summary>
+        private static string Pretty(Enums.ItemID id)
+        {
+            return id.ToString().Replace('_', ' ');
+        }
+
         // ---- scanning ---------------------------------------------------------------------------
 
         /// <summary>
@@ -350,10 +404,10 @@ namespace FieldNotes
             {
                 if (it == null || it.m_Info == null) continue;
 
+                // Curated first, then the game's own ItemType. Same rule as the live layer, so the
+                // notebook and the live view can never disagree about what a thing is.
                 string label; PoiKind kind;
-                if (Resources.TryGetValue(it.m_Info.m_ID, out label)) kind = PoiKind.Resource;
-                else if (CampGear.TryGetValue(it.m_Info.m_ID, out label)) kind = PoiKind.Camp;
-                else continue;
+                if (!LookUpItem(it.m_Info, out kind, out label)) continue;
 
                 Vector3 pos = it.transform.position;
                 float d2 = (pos - me).sqrMagnitude;
