@@ -139,14 +139,22 @@ namespace FieldNotes
             if (s_Built) return;
             s_Built = true;
 
+            // EVERY NAME HERE WAS CHECKED against the game's 1296-entry ItemID enum. Before that
+            // audit, 24 of 43 did not exist - they were parsed with a silent skip, so half this
+            // table had never worked and never said so. That is why the map felt thin, and why
+            // icons were sourced for cassava, papaya and mushroom that could never be drawn.
+            //
+            // Names removed rather than corrected, because the game has no such item:
+            //   Papaya / Papaya_Fruit   - no papaya in this build at all
+            //   Mushroom*               - only FakeStory_Mushroome, a quest prop
+            //   Tarp, Tarp_Poncho, Duct_Tape, Fuel*, Flare, Flashlight, Metal_Bidon,
+            //   Machete_Broken, Bandage, Antivenom, Antibiotics
             Add(Resources, "Coconut",  "coconuts_on_tree_01", "Coconut", "Coconut_Green",
                                        "Coconut_Green_Destroyable");
-            Add(Resources, "Banana",   "Banana", "Banana_Bush", "banana_tree");
-            Add(Resources, "Papaya",   "Papaya", "Papaya_Fruit");
-            Add(Resources, "Cassava",  "Manioc", "Manioc_Bulb", "Cassava");
+            Add(Resources, "Banana",   "Banana", "Banana_Leaf", "Banana_Seeds");
+            Add(Resources, "Cassava",  "Cassava_bulb");
             Add(Resources, "Palm heart", "Palm_heart");
-            Add(Resources, "Molineria", "Molineria", "Molineria_Bush");
-            Add(Resources, "Mushroom", "Mushroom", "Mushroom_Common", "Mushroom_Charcoal");
+            Add(Resources, "Molineria", "Molineria_leaf", "Molineria_Seeds", "molineria_flowers");
             Add(Resources, "Honeycomb", "Honeycomb");
             Add(Resources, "Bird nest", "Bird_Nest", "Bird_Nest_ToHoldHarvest");
 
@@ -154,21 +162,16 @@ namespace FieldNotes
             // it by being rare, fixed and worth planning a trip around - which is what a map is for.
             // A coconut palm is worth knowing about when you are standing near one; an iron deposit
             // is worth knowing about from the other side of the island.
-            Add(Resources, "Iron",    "iron_ore_stone", "iron_ore_melted");
+            Add(Resources, "Iron",    "iron_ore_stone", "iron_ore_melted", "iron_vein");
             Add(Resources, "Anthill", "Anthill", "Anthill_powder");
             Add(Resources, "Honey",   "Beehive", "Honeycomb");
 
-            // "Camp gear" read as the useful hard-to-find kit lying around the island, not his own
-            // built camp - flagged as ambiguous when he said it, and this is the reading that earns
-            // an icon. Easy to change: it is one table.
+            // Camp gear, likewise pruned to what exists. Most of the old list was aspirational:
+            // this game has no tarp, no duct tape, no fuel canister and no flashlight.
             Add(CampGear, "Rope",      "Rope");
-            Add(CampGear, "Tarp",      "Tarp", "Tarp_Poncho");
-            Add(CampGear, "Duct tape", "Duct_Tape");
-            Add(CampGear, "Fuel",      "Fuel_Canister", "Fuel");
-            Add(CampGear, "Machete",   "Machete", "Machete_Broken");
-            Add(CampGear, "Pot",       "Pot", "Bidon", "Metal_Bidon");
-            Add(CampGear, "Flare",     "Flare", "Flashlight");
-            Add(CampGear, "First aid", "Bandage", "Painkillers", "Antivenom", "Antibiotics");
+            Add(CampGear, "Machete",   "Machete", "Rusted_Machete", "MacheteToPickUp");
+            Add(CampGear, "Pot",       "Pot", "Bidon", "clay_bidon", "Coconut_Bidon");
+            Add(CampGear, "First aid", "Painkillers", "Leaf_Bandage", "ash_dressing");
         }
 
         /// <summary>
@@ -177,6 +180,14 @@ namespace FieldNotes
         /// does not exist - a table that half-matches is far better than a build that will not run
         /// because one identifier was guessed wrong.
         /// </summary>
+        /// <summary>Names that did not resolve, reported once at startup instead of vanishing.</summary>
+        private static readonly List<string> s_Unknown = new List<string>();
+
+        internal static string UnknownNames
+        {
+            get { return s_Unknown.Count == 0 ? "" : string.Join(", ", s_Unknown.ToArray()); }
+        }
+
         private static void Add(Dictionary<Enums.ItemID, string> table, string label, params string[] names)
         {
             for (int i = 0; i < names.Length; i++)
@@ -187,7 +198,14 @@ namespace FieldNotes
                     Enums.ItemID id = (Enums.ItemID)v;
                     if (!table.ContainsKey(id)) table.Add(id, label);
                 }
-                catch { /* not in this build's enum - fine */ }
+                catch
+                {
+                    // NOT FINE, and the old comment here said it was. A name that does not resolve
+                    // is a resource this mod will never mark, silently, forever - and 24 of the 43
+                    // names in these tables were in that state before anyone checked. The mistake
+                    // costs nothing to make and nothing to notice, which is the worst combination.
+                    s_Unknown.Add(names[i]);
+                }
             }
         }
 

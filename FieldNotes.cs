@@ -270,6 +270,13 @@ namespace FieldNotes
             _holds = new WindowHolds(Logger);
 
             Icons.LoadAll(PluginDir());
+            // Say it out loud at startup. A resource table with dead names looks identical to a
+            // world with nothing in it.
+            string unknown = Discovery.UnknownNames;
+            if (unknown.Length > 0)
+                Logger.LogWarning("these item names do not exist in this build and will never be " +
+                                  "marked: " + unknown);
+
             Logger.LogInfo("icons: " + Icons.Loaded + " loaded from " + Icons.Dir +
                            (Icons.LastError.Length > 0 ? "  (" + Icons.LastError + ")" : ""));
 
