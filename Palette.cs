@@ -31,6 +31,7 @@ namespace FieldNotes
         {
             PoiKind.Predator, PoiKind.Savage, PoiKind.Snake, PoiKind.Critter,
             PoiKind.Frog, PoiKind.Food, PoiKind.Resource, PoiKind.Camp, PoiKind.Manual,
+            PoiKind.Container,
         };
 
         internal static string LabelOf(PoiKind kind)
@@ -45,6 +46,7 @@ namespace FieldNotes
                 case PoiKind.Food:     return "Food animals";
                 case PoiKind.Resource: return "Plants and fruit";
                 case PoiKind.Camp:     return "Camp gear";
+                case PoiKind.Container: return "Containers you have lost track of";
                 case PoiKind.Manual:   return "Your own pins";
                 default:               return kind.ToString();
             }
@@ -62,6 +64,10 @@ namespace FieldNotes
             Add(config, PoiKind.Food,     "#FFFFFF");
             Add(config, PoiKind.Resource, "#FFFFFF");
             Add(config, PoiKind.Camp,     "#FFFFFF");
+            // Distinct from Camp white on purpose: when one of these appears it is telling him
+            // something specific - you left this somewhere and have not been back - and it should not
+            // read as just another piece of camp gear.
+            Add(config, PoiKind.Container, "#7FD4FF");
             Add(config, PoiKind.Manual,   "#FFFFFF");
         }
 

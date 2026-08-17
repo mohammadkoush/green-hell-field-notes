@@ -66,6 +66,7 @@ namespace FieldNotes
         private ConfigEntry<bool>  _spawnsOn, _showNorth;
         private ConfigEntry<bool>  _showCoords;
         private ConfigEntry<bool>  _mapContainers;
+        private ConfigEntry<float> _forgetHours;
         private ConfigEntry<float> _discAlpha;
         private ConfigEntry<bool>  _invertLetters;
         private ConfigEntry<float> _invertRate;
@@ -261,10 +262,19 @@ namespace FieldNotes
 
             // OFF by default, which is his first go-to and the right one. He keeps a lot of
             // half-coconuts, and thirty marks do not just clutter the map - they bury what it is for.
-            _mapContainers = Config.Bind("Show", "MarkBowlsAndContainers", false,
-                "Mark bowls and liquid containers - half coconuts, pots, bidons - where you put them " +
-                "down. Off by default: if you keep a lot of them, they swamp everything else on the " +
-                "minimap. Dropped tools and torches are still marked either way.");
+            // ON now, where the first version of this was off. That default was right when the
+            // choice was "all of them or none"; once a container only appears after he has been away
+            // from it, the thing being shown is genuinely useful and the clutter is gone.
+            _mapContainers = Config.Bind("Show", "MarkBowlsAndContainers", true,
+                "Mark bowls and liquid containers - half coconuts, pots, bidons - but ONLY once you " +
+                "have been away from one long enough to have lost track of it. Walk back to it and " +
+                "it goes quiet again. Turn this off to never mark them at all.");
+
+            _forgetHours = Config.Bind("Show", "ForgetContainersAfterHours", 1f,
+                new ConfigDescription(
+                    "How long away from a container before it counts as lost and reappears on the " +
+                    "minimap. Game hours, not real ones. Walk back to it and it goes quiet again.",
+                    new AcceptableValueRange<float>(0.1f, 72f)));
 
             _showNorth = Config.Bind("Minimap", "ShowNorth", true,
                 "Draw the north tick on the minimap rim. Only ever drawn in heading-up mode - with " +
@@ -353,6 +363,7 @@ namespace FieldNotes
         internal ConfigEntry<bool>   CfgShowNorth   { get { return _showNorth; } }
         internal ConfigEntry<bool>   CfgShowCoords  { get { return _showCoords; } }
         internal ConfigEntry<bool>   CfgMapContainers { get { return _mapContainers; } }
+        internal ConfigEntry<float>  CfgForgetHours   { get { return _forgetHours; } }
         internal ConfigEntry<float>  CfgDiscAlpha   { get { return _discAlpha; } }
         internal ConfigEntry<bool>   CfgInvert      { get { return _invertLetters; } }
         internal ConfigEntry<float>  CfgInvertRate  { get { return _invertRate; } }
@@ -418,6 +429,9 @@ namespace FieldNotes
                 case PoiKind.Camp:     return _showCamp.Value;
                 case PoiKind.Frog:     return _showFrog.Value;
                 case PoiKind.Food:     return _showFood.Value;
+                // Without this it fell through to the "your own pins" toggle, which would have tied
+                // his coconuts to a switch that has nothing to do with them.
+                case PoiKind.Container: return _mapContainers.Value;
                 default:               return _showManual.Value;
             }
         }
@@ -689,7 +703,7 @@ namespace FieldNotes
                                  _hideEmpty.Value, _showNorth.Value, _spawnsOn.Value,
                                  _revealOn.Value, _revealFraction.Value, _morphSeconds.Value,
                                  _spawnFade.Value, _showCoords.Value,
-                                 _discAlpha.Value, _invertLetters.Value,
+                                 _discAlpha.Value, _invertLetters.Value, _forgetHours.Value,
                                  RadiusOf, Enabled);
                 }
             }

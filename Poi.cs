@@ -42,7 +42,14 @@ namespace FieldNotes
         Critter,    // spiders, scorpions, centipedes
         Camp,       // camp gear and abandoned camps
         Food,       // huntable animals - tapir, capybara, peccary, agouti, armadillo, turtle...
-        Manual      // a pin he dropped himself
+        Manual,     // a pin he dropped himself
+        // APPENDED, NEVER INSERTED. The kind is serialised as its integer, so slotting a new value
+        // into the middle would re-label every POI in every existing notebook - his coconuts would
+        // come back as jaguars.
+        //
+        // Its own kind because it needs its own RULE, not just its own colour: a container is hidden
+        // while he knows where it is and shown once he has lost track of it. See Minimap.Draw.
+        Container   // bowls, pots, bidons - things he puts down and forgets
     }
 
     public class Poi

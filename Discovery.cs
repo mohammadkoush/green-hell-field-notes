@@ -272,10 +272,13 @@ namespace FieldNotes
                     // Kept behind a switch rather than deleted, because someone who owns two bowls
                     // and loses them is the player I originally had in mind, and they were not wrong
                     // to want it - just outnumbered.
+                    // Recorded as its own kind rather than suppressed. The minimap decides
+                    // whether to DRAW it, based on how long since he was last near it - which is a
+                    // question it can only ask about a POI that exists.
                     case Enums.ItemType.Bowl:
                     case Enums.ItemType.LiquidContainer:
                         if (!s_MapContainers) return false;
-                        kind = PoiKind.Camp;
+                        kind = PoiKind.Container;
                         label = Pretty(info.m_ID);
                         return true;
 
@@ -452,7 +455,8 @@ namespace FieldNotes
             // Now correct the stock of everything already known and currently in view.
             foreach (Poi p in store.All)
             {
-                if (p.Kind != PoiKind.Resource && p.Kind != PoiKind.Camp) continue;
+                if (p.Kind != PoiKind.Resource && p.Kind != PoiKind.Camp
+                    && p.Kind != PoiKind.Container) continue;
                 if ((p.Pos - me).sqrMagnitude > sr2) continue;   // cannot see it, do not touch it
 
                 // "Anything of this kind still within the merge radius, on the ground plane." One POI

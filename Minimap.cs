@@ -341,13 +341,40 @@ namespace FieldNotes
             GUI.Label(r, text);
         }
 
+        /// <summary>
+        /// Has he been away from this long enough to have lost it?
+        ///
+        /// StockSeenAt is game hours at the last scan that had it in sight, refreshed by Discovery
+        /// for every Camp, Resource and Container POI in range. So "has not been near it recently" is
+        /// a question the notebook could already answer - this only asks it.
+        ///
+        /// Never seen (-1) counts as forgotten: a container recorded but never since approached is
+        /// precisely the one worth pointing at.
+        /// </summary>
+        private static bool Forgotten(Poi p, float forgetHours)
+        {
+            if (p.StockSeenAt < 0f) return true;
+
+            // MainLevel.s_GameTime - the same accessor GameHours() in FieldNotes.cs already uses to
+            // WRITE StockSeenAt. Reading the clock a different way from the one that set the value
+            // would be comparing two numbers that only look like the same unit.
+            float now;
+            try { now = MainLevel.s_GameTime; } catch { return false; }
+
+            // Not forgotten if the clock has gone backwards - a fresh save loaded into an older world
+            // would otherwise make every container he owns reappear at once.
+            float away = now - p.StockSeenAt;
+            if (away < 0f) return false;
+            return away >= forgetHours;
+        }
+
         internal static void Draw(PoiStore store, List<LiveThing> live, Vector3 me, float yawDegrees,
                                   MinimapSize size, float rangeMetres, float bandMetres,
                                   float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
                                   float iconScale, bool hideEmpty, bool showNorth, bool spawnsOn,
                                   bool revealOn, float revealFraction, float morphSeconds,
                                   float spawnFade, bool showCoords,
-                                  float discAlpha, bool invertLetters,
+                                  float discAlpha, bool invertLetters, float forgetHours,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
             s_Seen.Clear();
@@ -400,6 +427,17 @@ namespace FieldNotes
             foreach (Poi p in store.All)
             {
                 if (!enabled(p.Kind)) continue;
+
+                // A CONTAINER IS SHOWN ONLY ONCE HE HAS LOST TRACK OF IT.
+                //
+                // His rule, and it is about his knowledge rather than the object: a coconut shell he
+                // set down at camp is not lost, so marking it is noise - but the same shell, after an
+                // hour away, probably is lost, and that is exactly when a mark earns its place.
+                //
+                // One rule covers the case he did not mention too: a container he never placed and
+                // walks past is one he has not been near, so it shows without any need to work out
+                // who put it there.
+                if (p.Kind == PoiKind.Container && !Forgotten(p, forgetHours)) continue;
 
                 // The spawn layer, off as a whole. Creature spawn points only - the larder stays,
                 // because "turn off spawn creatures" was the ask and the resources are the half
