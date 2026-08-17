@@ -378,6 +378,11 @@ namespace FieldNotes
 
         private void Show(FieldNotesPlugin p)
         {
+            Toggle("Bowls and containers", p.CfgMapContainers,
+                   "Mark half coconuts, pots and bidons where you put them down. Off by default: if " +
+                   "you keep a lot of them they swamp everything else. Dropped tools and torches are " +
+                   "still marked either way.", _hint);
+
             GUILayout.Label("What is allowed on the minimap at all.", _hint);
             GUILayout.Space(6f);
             Toggle("Big cats and caimans", p.CfgShowPredator, "", _hint);

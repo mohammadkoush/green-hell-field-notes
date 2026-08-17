@@ -65,6 +65,7 @@ namespace FieldNotes
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
         private ConfigEntry<bool>  _spawnsOn, _showNorth;
         private ConfigEntry<bool>  _showCoords;
+        private ConfigEntry<bool>  _mapContainers;
         private ConfigEntry<float> _discAlpha;
         private ConfigEntry<bool>  _invertLetters;
         private ConfigEntry<float> _invertRate;
@@ -258,6 +259,13 @@ namespace FieldNotes
                     "walking pace.",
                     new AcceptableValueRange<float>(0.5f, 30f)));
 
+            // OFF by default, which is his first go-to and the right one. He keeps a lot of
+            // half-coconuts, and thirty marks do not just clutter the map - they bury what it is for.
+            _mapContainers = Config.Bind("Show", "MarkBowlsAndContainers", false,
+                "Mark bowls and liquid containers - half coconuts, pots, bidons - where you put them " +
+                "down. Off by default: if you keep a lot of them, they swamp everything else on the " +
+                "minimap. Dropped tools and torches are still marked either way.");
+
             _showNorth = Config.Bind("Minimap", "ShowNorth", true,
                 "Draw the north tick on the minimap rim. Only ever drawn in heading-up mode - with " +
                 "north-up it would always be straight up and would say nothing.");
@@ -344,6 +352,7 @@ namespace FieldNotes
         internal ConfigEntry<bool>   CfgHeadingUp   { get { return _headingUp; } }
         internal ConfigEntry<bool>   CfgShowNorth   { get { return _showNorth; } }
         internal ConfigEntry<bool>   CfgShowCoords  { get { return _showCoords; } }
+        internal ConfigEntry<bool>   CfgMapContainers { get { return _mapContainers; } }
         internal ConfigEntry<float>  CfgDiscAlpha   { get { return _discAlpha; } }
         internal ConfigEntry<bool>   CfgInvert      { get { return _invertLetters; } }
         internal ConfigEntry<float>  CfgInvertRate  { get { return _invertRate; } }
@@ -445,6 +454,7 @@ namespace FieldNotes
                 // Mirror the two invert settings into statics the sampler coroutine can read. It runs
                 // outside the plugin's own call stack, and handing it a plugin reference would keep
                 // this object alive past a reload for no reason.
+                Discovery.s_MapContainers = _mapContainers != null && _mapContainers.Value;
                 InvertEnabled    = _invertLetters != null && _invertLetters.Value;
                 InvertSampleRate = _invertRate != null ? _invertRate.Value : 4f;
 

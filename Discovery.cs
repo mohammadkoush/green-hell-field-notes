@@ -134,6 +134,12 @@ namespace FieldNotes
 
         private static bool s_Built;
 
+        /// <summary>
+        /// Should bowls and liquid containers be marked at all? Mirrored from config every frame by
+        /// the plugin, because Discovery is static and has no plugin reference of its own.
+        /// </summary>
+        internal static bool s_MapContainers;
+
         private static void BuildTables()
         {
             if (s_Built) return;
@@ -254,9 +260,25 @@ namespace FieldNotes
                         label = Pretty(info.m_ID);
                         return true;
 
-                    // Worth remembering where you left it.
+                    // Worth remembering where you left it - a machete or a lit torch you put down
+                    // is genuinely easy to lose.
+                    //
+                    // BOWL AND LIQUIDCONTAINER USED TO BE IN THIS LIST AND SHOULD NOT HAVE BEEN.
+                    // "Worth remembering where you left it" is true of ONE bowl abandoned in the
+                    // jungle. He keeps thirty half-coconuts around his base, and thirty marks do not
+                    // merely clutter the map - they bury the things it exists to show. Same rule as
+                    // the single red on this minimap: a mark only means anything while it is rare.
+                    //
+                    // Kept behind a switch rather than deleted, because someone who owns two bowls
+                    // and loses them is the player I originally had in mind, and they were not wrong
+                    // to want it - just outnumbered.
                     case Enums.ItemType.Bowl:
                     case Enums.ItemType.LiquidContainer:
+                        if (!s_MapContainers) return false;
+                        kind = PoiKind.Camp;
+                        label = Pretty(info.m_ID);
+                        return true;
+
                     case Enums.ItemType.Dressing:
                     case Enums.ItemType.ItemTool:
                     case Enums.ItemType.Torch:
