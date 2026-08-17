@@ -64,6 +64,50 @@ namespace FieldNotes
             return s_White;
         }
 
+        private static Texture2D s_Disc;
+
+        /// <summary>
+        /// A filled circle, baked once.
+        ///
+        /// IMGUI has no circle fill - every other mark in this file is a stretched 1x1 texture, and
+        /// the ring is sixty-four little squares walked round a radius. That works for a ring and is
+        /// hopeless for a disc, so this is a real texture, cached like the player arrow.
+        ///
+        /// The edge is feathered over about two texels. A hard edge on a 128px texture stretched to
+        /// 400 shows its stair-steps badly, and a circle with visible stairs looks like a mistake
+        /// rather than a design.
+        /// </summary>
+        private static Texture2D DiscTex()
+        {
+            if (s_Disc != null) return s_Disc;
+
+            const int N = 128;
+            const float R = N * 0.5f;
+
+            Texture2D t = new Texture2D(N, N, TextureFormat.ARGB32, false);
+            t.hideFlags = HideFlags.HideAndDontSave;
+            t.wrapMode = TextureWrapMode.Clamp;
+
+            Color32[] px = new Color32[N * N];
+            for (int y = 0; y < N; y++)
+            {
+                for (int x = 0; x < N; x++)
+                {
+                    float dx = (x + 0.5f) - R;
+                    float dy = (y + 0.5f) - R;
+                    float d = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    // 1 inside, 0 outside, feathered across the last two texels.
+                    float a = Mathf.Clamp01((R - d) / 2f);
+                    px[y * N + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(a * 255f));
+                }
+            }
+            t.SetPixels32(px);
+            t.Apply();
+            s_Disc = t;
+            return s_Disc;
+        }
+
         private static void Fill(Rect r, Color c)
         {
             Color old = GUI.color;
@@ -256,12 +300,54 @@ namespace FieldNotes
         /// Draw the whole thing. <paramref name="radiusOf"/> hands back the detection radius in
         /// metres for a category, <paramref name="enabled"/> whether that category is switched on.
         /// </summary>
+        /// <summary>
+        /// Label with a one-pixel drop shadow.
+        ///
+        /// Needed the moment the background panel went: pale text straight onto jungle is legible
+        /// against dark leaves and gone against a sunlit clearing. The shadow is what the panel was
+        /// really for.
+        /// </summary>
+        /// <summary>
+        /// Text with a hard outline all the way round.
+        ///
+        /// "An outline that costs me nothing" - his words, and this is it: eight offset draws of the
+        /// dark colour, then one bright draw on top. No readback, no shader, nothing to fail. It is
+        /// not a true inverse and it does not need to be, because the point was never inversion, it
+        /// was that the letter is always readable.
+        ///
+        /// Eight and not four: with only the axes the diagonals of a bold glyph poke through the
+        /// outline and the letter still fades against a matching background.
+        /// </summary>
+        private static void Outlined(Rect r, string text, GUIStyle style, Color face, float w)
+        {
+            GUI.color = new Color(0f, 0f, 0f, 0.85f);
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    GUI.Label(new Rect(r.x + dx * w, r.y + dy * w, r.width, r.height), text, style);
+                }
+            }
+            GUI.color = face;
+            GUI.Label(r, text, style);
+        }
+
+        private static void Shadowed(Rect r, string text, Color colour)
+        {
+            GUI.color = new Color(0f, 0f, 0f, 0.6f);
+            GUI.Label(new Rect(r.x + 1f, r.y + 1f, r.width, r.height), text);
+            GUI.color = colour;
+            GUI.Label(r, text);
+        }
+
         internal static void Draw(PoiStore store, List<LiveThing> live, Vector3 me, float yawDegrees,
                                   MinimapSize size, float rangeMetres, float bandMetres,
                                   float pingHoldSeconds, bool headingUp, bool liveUsesHalo,
                                   float iconScale, bool hideEmpty, bool showNorth, bool spawnsOn,
                                   bool revealOn, float revealFraction, float morphSeconds,
-                                  float spawnFade,
+                                  float spawnFade, bool showCoords,
+                                  float discAlpha, bool invertLetters,
                                   Func<PoiKind, float> radiusOf, Func<PoiKind, bool> enabled)
         {
             s_Seen.Clear();
@@ -269,20 +355,38 @@ namespace FieldNotes
             float pad = Mathf.Max(12f, px * 0.06f);
             Rect box = new Rect(Screen.width - px - pad, pad, px, px);
 
-            Fill(box, new Color(0.03f, 0.05f, 0.04f, 0.55f));
-
+            // NO PANEL AND NO BORDER. His instruction: "lose the rectangular in the minimap, keep
+            // the circle, no background to it outside the circle." Things further out than the ring
+            // now float over the jungle with nothing behind them, which is the point - the map is a
+            // circle, so a square frame around it was only ever describing the texture it was drawn
+            // on.
+            //
+            // The panel WAS doing one useful job: it made the footer text readable. That job moves to
+            // a drop shadow at the bottom of this method rather than simply being dropped.
             Color edge = new Color(0.86f, 0.82f, 0.68f, 0.85f);
-            float b = Mathf.Max(1f, px * 0.008f);
-            Fill(new Rect(box.x, box.y, box.width, b), edge);
-            Fill(new Rect(box.x, box.yMax - b, box.width, b), edge);
-            Fill(new Rect(box.x, box.y, b, box.height), edge);
-            Fill(new Rect(box.xMax - b, box.y, b, box.height), edge);
 
             float half = px * 0.5f;
             Vector2 centre = new Vector2(box.x + half, box.y + half);
 
             // The halo itself, at 72% of the box so it reads as a ring rather than the border.
             float ringPx = half * 0.72f;
+
+            // THE BACKGROUND HE ASKED FOR, and only inside the ring.
+            //
+            // Drawn BEFORE the ring and before every marker, so it sits behind all of them - a disc
+            // painted afterwards would grey out the icons it is supposed to be helping.
+            //
+            // Anything beyond the ring still floats over bare jungle, which is what he wanted when
+            // the rectangle went. The disc fills the circle; it does not restore the panel.
+            if (discAlpha > 0.001f)
+            {
+                Color old = GUI.color;
+                GUI.color = new Color(0.03f, 0.05f, 0.04f, discAlpha);
+                GUI.DrawTexture(new Rect(centre.x - ringPx, centre.y - ringPx, ringPx * 2f, ringPx * 2f),
+                                DiscTex());
+                GUI.color = old;
+            }
+
             Ring(centre, ringPx, new Color(0.55f, 0.85f, 1f, 0.22f), 64, Mathf.Max(2f, px * 0.012f));
 
             float pixelsPerMetre = half / (rangeMetres * 0.5f);
@@ -437,28 +541,81 @@ namespace FieldNotes
             //
             // So it is now a pale TICK outside the ring, off the danger palette entirely, and only
             // drawn in heading-up mode - with north-up it is always straight up and says nothing.
-            if (showNorth && headingUp)
+            // ...and it is now four LETTERS, which is what he asked for. N, E, S, W around the
+            // ring, turning with his heading so the letter that is up is the way he is facing.
+            //
+            // Drawn in north-up mode too, unlike the old tick. With the panel gone there is no frame
+            // to imply which way up the map is, so even a fixed N is now carrying information the
+            // border used to.
+            if (showNorth)
             {
-                float northRad = rot * Mathf.Deg2Rad;
-                float sin = Mathf.Sin(northRad), cos = Mathf.Cos(northRad);
-                Color tick = new Color(0.86f, 0.82f, 0.68f, 0.75f);
-                float w = Mathf.Max(2f, px * 0.012f);
+                Color letter = new Color(0.95f, 0.93f, 0.82f, 1.00f);
+                Color minor  = new Color(0.88f, 0.85f, 0.72f, 0.85f);
 
-                // A short radial stroke rather than a blob: three marks stepping inward read as a
-                // tick pointing at the rim.
-                for (int i = 0; i < 3; i++)
+                GUIStyle cs = new GUIStyle(GUI.skin.label);
+                cs.alignment = TextAnchor.MiddleCenter;
+                cs.fontSize = Mathf.Max(10, Mathf.RoundToInt(px * 0.075f));
+                cs.fontStyle = FontStyle.Bold;
+
+                // THE BOX COMES FROM THE FONT. It used to be a hard-coded 20x18 while the font scaled
+                // with the map, so on his large minimap a 35px glyph was being drawn into an 18px box
+                // and every letter was sliced. His screenshot showed fragments and no whole letter.
+                float lw = cs.fontSize * 1.6f;
+                float lh = cs.fontSize * 1.6f;
+
+                float lr = half * 0.86f;
+                string[] marks = { "N", "E", "S", "W" };
+                for (int i = 0; i < 4; i++)
                 {
-                    float r = half - 5f - i * w * 1.6f;
-                    Dot(centre.x + sin * r, centre.y - cos * r, w, tick);
+                    float a = (rot + i * 90f) * Mathf.Deg2Rad;
+                    float lx = centre.x + Mathf.Sin(a) * lr;
+                    float ly = centre.y - Mathf.Cos(a) * lr;
+                    Rect lrect = new Rect(lx - lw * 0.5f, ly - lh * 0.5f, lw, lh);
+
+                    LetterInvert.SetPoint(i, lx, ly);
+
+                    Color face = (i == 0) ? letter : minor;
+                    if (invertLetters) face = LetterInvert.ColourFor(i, face);
+
+                    Outlined(lrect, marks[i], cs, face,
+                             Mathf.Max(1f, cs.fontSize * 0.09f));
+                }
+                GUI.color = Color.white;
+            }
+
+            string foot = (headingUp ? "^ " : "N ") + Mathf.RoundToInt(rangeMetres) + "m   " +
+                          store.Count + " known" +
+                          (live != null && live.Count > 0 ? "   " + live.Count + " live" : "");
+
+            Rect footRect = new Rect(box.x + 6f, box.yMax - Mathf.Max(20f, px * 0.09f),
+                                     box.width - 12f, Mathf.Max(18f, px * 0.085f));
+
+            // THE GAME'S OWN COORDINATES, on their own line above the footer.
+            //
+            // Player.GetGPSCoordinates is what Watch.UpdateState calls and prints on the compass
+            // face - first out param is the W figure, second is the other. Borrowing the same call
+            // means the minimap and his watch cannot drift apart, and there is no coordinate scheme
+            // of ours that would need explaining or would break when the game's did.
+            if (showCoords)
+            {
+                string gps = null;
+                try
+                {
+                    int w, s;
+                    Player.Get().GetGPSCoordinates(out w, out s);
+                    gps = w + "W  " + s + "S";
+                }
+                catch { gps = null; }
+
+                if (gps != null)
+                {
+                    Rect g = new Rect(footRect.x, footRect.y - footRect.height,
+                                      footRect.width, footRect.height);
+                    Shadowed(g, gps, edge);
                 }
             }
 
-            GUI.color = edge;
-            GUI.Label(new Rect(box.x + 6f, box.yMax - Mathf.Max(20f, px * 0.09f),
-                               box.width - 12f, Mathf.Max(18f, px * 0.085f)),
-                      (headingUp ? "^ " : "N ") + Mathf.RoundToInt(rangeMetres) + "m   " +
-                      store.Count + " known" +
-                      (live != null && live.Count > 0 ? "   " + live.Count + " live" : ""));
+            Shadowed(footRect, foot, edge);
             GUI.color = Color.white;
         }
     }

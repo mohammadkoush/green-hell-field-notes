@@ -64,6 +64,14 @@ namespace FieldNotes
         private ConfigEntry<float> _discoverRadius, _seeRadius, _scanEvery, _mergeRadius;
         private ConfigEntry<bool>  _liveOn, _liveAnimals, _livePlants, _liveHalo;
         private ConfigEntry<bool>  _spawnsOn, _showNorth;
+        private ConfigEntry<bool>  _showCoords;
+        private ConfigEntry<float> _discAlpha;
+        private ConfigEntry<bool>  _invertLetters;
+        private ConfigEntry<float> _invertRate;
+
+        // Statics so the sampler coroutine can read them without holding a plugin reference.
+        internal static bool  InvertEnabled;
+        internal static float InvertSampleRate = 4f;
         private ConfigEntry<float> _liveRange, _liveEvery, _iconScale;
         private ConfigEntry<bool>  _revealOn;
         private ConfigEntry<float> _revealFraction, _morphSeconds;
@@ -223,6 +231,33 @@ namespace FieldNotes
                 "way to find out whether a mark on the minimap is a spawn point or part of the " +
                 "compass.");
 
+            // UNGATED ON PURPOSE, with this switch for anyone who wants the realism. His standing
+            // rule is that these mods delete friction rather than add it, and hunting for the watch
+            // to find out where you are is friction. The game gates its own GPS behind carrying a
+            // watch; turn this off to match it.
+            _showCoords = Config.Bind("Minimap", "ShowCoordinates", true,
+                "Show the game's own GPS coordinates under the minimap. These are the exact numbers " +
+                "your watch shows on its compass face - the same call, so they cannot disagree.");
+
+            _discAlpha = Config.Bind("Minimap", "CircleBackground", 0.45f,
+                new ConfigDescription(
+                    "How solid the background inside the minimap circle is. 0 is fully transparent, " +
+                    "1 is opaque. This fills the CIRCLE only - the square panel is gone for good.",
+                    new AcceptableValueRange<float>(0f, 1f)));
+
+            _invertLetters = Config.Bind("Minimap", "InvertCompassLetters", false,
+                "Colour each compass letter the reverse of whatever is behind it. OFF by default " +
+                "because it costs real performance: it reads pixels back off the screen, which is " +
+                "the classic way to lose frames in Unity. The letters already have a hard outline " +
+                "and are readable without this.");
+
+            _invertRate = Config.Bind("Minimap", "InvertSampleRate", 4f,
+                new ConfigDescription(
+                    "How many times a second the letters re-check what is behind them. Lower is " +
+                    "cheaper. 4 is plenty - the background behind a compass letter changes at " +
+                    "walking pace.",
+                    new AcceptableValueRange<float>(0.5f, 30f)));
+
             _showNorth = Config.Bind("Minimap", "ShowNorth", true,
                 "Draw the north tick on the minimap rim. Only ever drawn in heading-up mode - with " +
                 "north-up it would always be straight up and would say nothing.");
@@ -308,6 +343,10 @@ namespace FieldNotes
         internal ConfigEntry<float>  CfgPingHold    { get { return _pingHold; } }
         internal ConfigEntry<bool>   CfgHeadingUp   { get { return _headingUp; } }
         internal ConfigEntry<bool>   CfgShowNorth   { get { return _showNorth; } }
+        internal ConfigEntry<bool>   CfgShowCoords  { get { return _showCoords; } }
+        internal ConfigEntry<float>  CfgDiscAlpha   { get { return _discAlpha; } }
+        internal ConfigEntry<bool>   CfgInvert      { get { return _invertLetters; } }
+        internal ConfigEntry<float>  CfgInvertRate  { get { return _invertRate; } }
         internal ConfigEntry<bool>   CfgShowPredator{ get { return _showPredator; } }
         internal ConfigEntry<bool>   CfgShowSavage  { get { return _showSavage; } }
         internal ConfigEntry<bool>   CfgShowSnake   { get { return _showSnake; } }
@@ -402,6 +441,17 @@ namespace FieldNotes
             try
             {
                 Keys();
+
+                // Mirror the two invert settings into statics the sampler coroutine can read. It runs
+                // outside the plugin's own call stack, and handing it a plugin reference would keep
+                // this object alive past a reload for no reason.
+                InvertEnabled    = _invertLetters != null && _invertLetters.Value;
+                InvertSampleRate = _invertRate != null ? _invertRate.Value : 4f;
+
+                // Started once and left running - it idles at half a second a tick while switched
+                // off, which costs nothing and means toggling the setting takes effect immediately
+                // rather than waiting for something to restart it.
+                if (InvertEnabled) LetterInvert.Ensure(this);
 
                 Player p = Player.Get();
                 if (p == null) return;
@@ -608,6 +658,7 @@ namespace FieldNotes
             // scene change, a fault - and if the cursor, the input block and the pause went with it,
             // the game would be left paused and unplayable with no key that helps.
             try { if (_holds != null) _holds.ReleaseAll(); } catch { }
+            try { LetterInvert.Stop(); } catch { }
             try { _store.Save(); } catch { }
         }
 
@@ -627,7 +678,8 @@ namespace FieldNotes
                                  _headingUp.Value, _liveHalo.Value, _iconScale.Value,
                                  _hideEmpty.Value, _showNorth.Value, _spawnsOn.Value,
                                  _revealOn.Value, _revealFraction.Value, _morphSeconds.Value,
-                                 _spawnFade.Value,
+                                 _spawnFade.Value, _showCoords.Value,
+                                 _discAlpha.Value, _invertLetters.Value,
                                  RadiusOf, Enabled);
                 }
             }

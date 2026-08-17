@@ -245,8 +245,27 @@ namespace FieldNotes
             GUILayout.Space(6f);
             Toggle("Heading up", p.CfgHeadingUp,
                    "On: the top of the minimap is where you are looking. Off: north is up.", _hint);
-            Toggle("North tick", p.CfgShowNorth,
-                   "Only ever drawn heading-up - with north-up it would always point straight up.",
+            Slider("Circle background", p.CfgDiscAlpha, 0f, 1f, "", _hint,
+                   "How solid the background inside the circle is. This fills the CIRCLE only - the " +
+                   "square panel is gone for good.");
+
+            Toggle("Invert letters", p.CfgInvert,
+                   "Colour each compass letter the reverse of what is behind it. Costs real " +
+                   "performance - it reads the screen back every sample. The letters have a hard " +
+                   "outline and are readable without this.", _hint);
+
+            Slider("Invert sample rate", p.CfgInvertRate, 0.5f, 30f, "/s", _hint,
+                   "How many times a second the letters re-check their background. Lower is cheaper. " +
+                   "4 is plenty - it only has to keep up with walking pace.");
+
+            Toggle("Coordinates", p.CfgShowCoords,
+                   "Show the game's own GPS coordinates under the minimap - the same numbers your " +
+                   "watch shows, from the same call, so they can never disagree. Turn it off if you " +
+                   "would rather read the watch for them.", _hint);
+
+            Toggle("Compass letters", p.CfgShowNorth,
+                   "N, E, S and W around the ring, turning with your heading. Drawn in north-up mode " +
+                   "too: with the panel gone there is no frame left to say which way up the map is.",
                    _hint);
         }
 
