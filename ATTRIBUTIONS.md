@@ -50,8 +50,9 @@ CC BY 3.0. Artists named per icon.
 | bow | Bow-arrow - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | camp | Forest-camp - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | caveman | Caveman - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| container | Coconuts - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
 | iron | Ore - Faithtoken - game-icons.svg | CC BY 3.0 | Faithtoken |
 | mushroom | Mushroom - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
-| palmheart | Palm-tree - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
-| plant | Sprout - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
+| palmheart | Coconuts - Delapouite - game-icons.svg | CC BY 3.0 | Delapouite |
+| plant | Ground-sprout - Lorc - game-icons.svg | CC BY 3.0 | Lorc |
 | spear | Stone-spear - Lorc - game-icons.svg | CC BY 3.0 | Lorc |

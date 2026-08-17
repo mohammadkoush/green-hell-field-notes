@@ -46,6 +46,10 @@ WANTED = {
     "bow":       "File:Bow-arrow - Delapouite - game-icons.svg",
     "spear":     "File:Stone-spear - Lorc - game-icons.svg",
     "camp":      "File:Forest-camp - Delapouite - game-icons.svg",
+    # A container he set down and lost track of. Deliberately NOT camp.png: there is a precedent in
+    # Icons.cs against borrowing a stand-in - savages once fell through to the panther icon and a
+    # wrong icon reads as a correct one. "Camp gear" is not what a forgotten coconut shell is saying.
+    "container": "File:Coconuts - Delapouite - game-icons.svg",
     "iron":      "File:Ore - Faithtoken - game-icons.svg",
     "birdnest":  "File:Nest-eggs - Delapouite - game-icons.svg",
     "mushroom":  "File:Mushroom - Lorc - game-icons.svg",

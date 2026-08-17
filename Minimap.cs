@@ -559,6 +559,10 @@ namespace FieldNotes
             Color savedColour = GUI.color;
             GUIUtility.RotateAroundPivot(arrowAngle, centre);
             GUI.color = Color.white;
+            // HALF SIZE, his call and annotated on the screenshot with an arrow. At the old size
+            // the marker was covering the middle of its own map - the one place he is most likely to
+            // need to see, since it is where anything closing on him arrives.
+            arrowSize *= 0.5f;
             GUI.DrawTexture(new Rect(centre.x - arrowSize * 0.5f, centre.y - arrowSize * 0.5f,
                                      arrowSize, arrowSize), ArrowTex());
             GUI.color = savedColour;

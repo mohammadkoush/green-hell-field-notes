@@ -169,6 +169,9 @@ namespace FieldNotes
                 case PoiKind.Snake:    return Get("snake");
                 case PoiKind.Critter:  return Get("spider");
                 case PoiKind.Camp:     return Get("camp");
+                // Its own art, not camp.png. See the savage/panther note below: a wrong icon reads
+                // as a correct one, and "camp gear" is not what a forgotten container is saying.
+                case PoiKind.Container: return Get("container");
                 case PoiKind.Food:     return Get("animal");
 
                 // NOT the panther. It used to fall through to Get("predator") as a stand-in for
