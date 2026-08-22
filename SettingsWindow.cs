@@ -267,6 +267,18 @@ namespace FieldNotes
                    "N, E, S and W around the ring, turning with your heading. Drawn in north-up mode " +
                    "too: with the panel gone there is no frame left to say which way up the map is.",
                    _hint);
+
+            // Appended at the end of this tab, not slotted in beside the other toggles: everything
+            // above it has been in the same place for weeks and he finds settings by where they sit.
+            GUILayout.Space(6f);
+            Toggle("Wait until the game is playable", p.CfgWaitForReady,
+                   "Hold the minimap back until the game has genuinely finished loading, instead of " +
+                   "drawing it over the loading screen. It waits for the game's own all-clear - " +
+                   "including the ground around you having streamed in - rather than counting " +
+                   "seconds, so it is right on any machine.", _hint);
+            Slider("Extra settle", p.CfgReadySettle, 0f, 15f, "s", _hint,
+                   "A pause after the game says it is ready, because control of your character can " +
+                   "arrive a moment later. Raise it if the minimap still shows up too early.");
         }
 
         private void Colours(FieldNotesPlugin p)

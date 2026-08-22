@@ -9,6 +9,14 @@
 
 ## Current
 
+**The minimap waits until the game is actually playable.**
+It used to be drawn over the loading screen, mapping a world that had not arrived yet. It now holds
+back until the game's own signals agree that loading is finished — including the terrain around you
+having streamed in, which is the difference between "loaded" and "there is ground under your feet".
+This is not a timer: a fixed delay is right on one machine and wrong on every other, and it cannot
+tell loading from sitting in the main menu. Both the switch and a small extra settle are at the
+bottom of the MINIMAP tab.
+
 **The minimap is a circle.**
 The square panel and its border are gone. A translucent disc fills the ring instead, and anything
 beyond the ring floats over the world with nothing behind it.

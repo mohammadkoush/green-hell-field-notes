@@ -34,7 +34,7 @@ using UnityEngine;
 namespace FieldNotes
 {
     [BepInPlugin(Guid, Name, Version)]
-    public class FieldNotesPlugin : BaseUnityPlugin
+    public partial class FieldNotesPlugin : BaseUnityPlugin
     {
         public const string Guid    = "com.mohammadkoush.fieldnotes";
         public const string Name    = "Field Notes";
@@ -117,6 +117,7 @@ namespace FieldNotes
                 "your own pins are not affected.");
 
             _minimapOn   = Config.Bind("Minimap", "Enabled", true, "Show the minimap at all.");
+            BindReadyConfig();   // see Ready.cs - hold the minimap until the game is playable
             _minimapSize = Config.Bind("Minimap", "Size", "Medium",
                 new ConfigDescription("Share of screen height: Small 16%, Medium 22%, Large 30%. " +
                     "A fixed pixel size is a postage stamp on a 4K panel and half the screen on a " +
@@ -690,7 +691,9 @@ namespace FieldNotes
 
         private void OnGUI()
         {
-            if (_minimapOn.Value)
+            // Two conditions, not one: he has it switched on, AND the game is far enough along to
+            // have something worth mapping. See Ready.cs for what "far enough along" is measured by.
+            if (_minimapOn.Value && GameIsPlayable())
             {
                 Player p = Player.Get();
                 if (p != null)
